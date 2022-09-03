@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
-
+require("dotenv").config();
 const app = express();
 
 app.use(express.json());
@@ -16,16 +16,16 @@ app.use(
     })
 );
 
-const PathsGlobal = require('./paths/pathsGlobal/PathsGlobal')
-const PathsAdmin = require('./paths/pathsAdmin/PathsAdmin')
-const PathsUser = require('./paths/pathsUser/PathsUser')
-const PathsDriver = require('./paths/pathsDriver/PathsDriver')
+const PathsGlobal = require("./paths/pathsGlobal/PathsGlobal");
+const PathsAdmin = require("./paths/pathsAdmin/PathsAdmin");
+const PathsUser = require("./paths/pathsUser/PathsUser");
+const PathsDriver = require("./paths/pathsDriver/PathsDriver");
 
 PathsGlobal.setupPaths(app);
 PathsAdmin.setupPaths(app);
 PathsUser.setupPaths(app);
 PathsDriver.setupPaths(app);
 
-app.listen(3001,() => {
+app.listen(3001, () => {
     console.log("server is running on port 3001");
 });
