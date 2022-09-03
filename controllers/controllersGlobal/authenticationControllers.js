@@ -41,6 +41,7 @@ const login = async (req, res) => {
                     "SELECT * FROM `user` WHERE CODE = ?",
                     [username],
                     (err, result) => {
+                        //err select data
                         if (err) {
                             data.status =
                                 Strings.StatusCodeAPI.INTERNAL_SERVER_ERROR;
