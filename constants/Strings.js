@@ -10,16 +10,6 @@ const Strings = {
         SERVICE_UNAVAILABLE: "Máy Chủ Không Có Sẵn",
         ERROR_GET_DATA: "Lỗi Lấy Dữ Liệu",
     },
-
-    StatusCodeAPI: {
-        OK: 200,
-        CREATED: 201,
-        BAD_REQUEST: 400,
-        UNAUTHORIZED: 401,
-        REQUEST_TIMEOUT: 408,
-        INTERNAL_SERVER_ERROR: 500,
-        SERVICE_UNAVAILABLE: 503,
-    },
 };
 
 module.exports = {
