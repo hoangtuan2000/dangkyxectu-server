@@ -2,7 +2,7 @@ const Constants = {
     ResultData: {
         status: '',
         message: '',
-        data: [],
+        data: {},
     },
 
     ApiCode: {

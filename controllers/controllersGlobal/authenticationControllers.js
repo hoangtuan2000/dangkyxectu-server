@@ -18,25 +18,25 @@ const login = async (req, res) => {
                 if (err.name == new ldap.InvalidCredentialsError().name) {
                     data.status = Constants.ApiCode.UNAUTHORIZED;
                     data.message = Strings.Common.ERROR_PASSWORD_USERID;
-                    res.send(data);
+                    res.status(200).send(data);
                 }
                 //error not enough attribute
                 else if (err.name == new ldap.UnwillingToPerformError().name) {
                     data.status = Constants.ApiCode.BAD_REQUEST;
                     data.message = Strings.Common.NOT_ENOUGH_DATA;
-                    res.send(data);
+                    res.status(200).send(data);
                 }
                 //error other
                 else {
                     data.status = Constants.ApiCode.SERVICE_UNAVAILABLE;
                     data.message = Strings.Common.SERVICE_UNAVAILABLE;
-                    res.send(data);
+                    res.status(200).send(data);
                 }
             }
             // get data user => token
             else {
                 db.query(
-                    "SELECT * FROM `user` WHERE CODE = ?",
+                    "SELECT code, fullName, role.name as role FROM user, role WHERE CODE = ? AND user.idRole = role.idRole",
                     [code],
                     (err, result) => {
                         //error select data
@@ -44,7 +44,7 @@ const login = async (req, res) => {
                             data.status =
                                 Constants.ApiCode.INTERNAL_SERVER_ERROR;
                             data.message = Strings.Common.ERROR;
-                            res.send(data);
+                            res.status(200).send(data);
                         } else {
                             if (result.length > 0) {
                                 data.status = Constants.ApiCode.OK;
@@ -52,15 +52,18 @@ const login = async (req, res) => {
                                 data.data = {
                                     access_token: process.env.ACCESS_TOKEN,
                                     token: jwtConfig.signToken(result[0].code),
+                                    fullName: result[0].fullName,
+                                    code: result[0].code,
+                                    role: result[0].role,
                                 };
-                                res.send(data);
+                                res.status(200).send(data);
                             }
                             // error result data user empty
                             else {
                                 data.status =
                                     Constants.ApiCode.INTERNAL_SERVER_ERROR;
                                 data.message = Strings.Common.ERROR_GET_DATA;
-                                res.send(data);
+                                res.status(200).send(data);
                             }
                         }
                     }
@@ -70,11 +73,6 @@ const login = async (req, res) => {
     );
 };
 
-const login2 = (req, res) => {
-    res.send(Constant.RESULT_DATA);
-};
-
 module.exports = {
     login,
-    login2,
 };
