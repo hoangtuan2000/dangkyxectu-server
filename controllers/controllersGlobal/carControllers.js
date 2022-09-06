@@ -2,6 +2,39 @@ const db = require("../../models/index");
 const { Constants } = require("../../constants/Constants");
 const { Strings } = require("../../constants/Strings");
 
+const getCar = async (req, res) => {
+    const { idCar } = req.body;
+    let data = { ...Constants.ResultData };
+    // const sql = `SELECT 
+    //                 c.idCar, c.licensePlates, c.image,
+    //                 cs.name as status, ct.name as type, ct.seatNumber, 
+    //                 cc.name as color, cb.name as brand
+    //             FROM 
+    //                 car as c, car_type as ct, car_status as cs,
+    //                 car_color as cc, car_brand as cb
+    //             WHERE 
+    //                 c.idCar = ?
+    //                 AND c.idCarStatus = cs.idCarStatus 
+    //                 AND c.idCarType = ct.idCarType
+    //                 AND c.idCarColor = cc.idCarColor
+    //                 AND c.idCarBrand = cb.idCarBrand`;
+
+    const sql = `SELECT * FROM car WHERE idCar = ?`
+    db.query(sql, [idCar], (err, result) => {
+        //error select data
+        if (err) {
+            data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+            data.message = Strings.Common.ERROR;
+            res.status(200).send(data);
+        } else {
+            data.status = Constants.ApiCode.OK;
+            data.message = Strings.Common.SUCCESS;
+            data.data = [...result];
+            res.status(200).send(data);
+        }
+    });
+};
+
 const getCarList = async (req, res) => {
     let data = { ...Constants.ResultData };
     db.query(
@@ -39,4 +72,5 @@ const getCarList = async (req, res) => {
 
 module.exports = {
     getCarList,
+    getCar,
 };
