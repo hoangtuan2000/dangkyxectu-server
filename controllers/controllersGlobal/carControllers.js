@@ -53,7 +53,7 @@ const getCarList = async (req, res) => {
                 WHERE sc1.idScheduleStatus = 2
                 GROUP BY sc1.idCar)
             ) as sc3 
-        ON car.idCar = sc3.idCar WHERE car.idCarStatus = 1`,
+        ON car.idCar = sc3.idCar WHERE car.idCarStatus = 1 ORDER BY sc3.idSchedule`,
         (err, result) => {
             //error select data
             if (err) {
