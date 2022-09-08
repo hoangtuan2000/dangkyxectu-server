@@ -41,14 +41,14 @@ const getCarList = async (req, res) => {
         `SELECT 
             car.idCar, car.licensePlates, car.image, 
             car.idCarStatus, car.idCarType, sc3.idSchedule, 
-            sc3.startDay, sc3.endDay, sc3.reason 
+            sc3.startDate, sc3.endDate, sc3.reason 
         FROM car 
         LEFT JOIN 
             (SELECT * 
             FROM schedule as sc2
             WHERE 
-                FROM_UNIXTIME(sc2.startDay) = 
-                (SELECT MAX(FROM_UNIXTIME(sc1.startDay)) as maxDate 
+                FROM_UNIXTIME(sc2.startDate) = 
+                (SELECT MAX(FROM_UNIXTIME(sc1.startDate)) as maxDate 
                 FROM schedule as sc1
                 WHERE sc1.idScheduleStatus = 2
                 GROUP BY sc1.idCar)

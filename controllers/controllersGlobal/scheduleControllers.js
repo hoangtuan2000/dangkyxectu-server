@@ -5,9 +5,9 @@ const { Strings } = require("../../constants/Strings");
 const getScheduleList = async (req, res) => {
     const { idCar } = req.body;
     let data = { ...Constants.ResultData };
-    let sql = `SELECT * FROM schedule WHERE idScheduleStatus = 2 ORDER BY FROM_UNIXTIME(startDay)`;
+    let sql = `SELECT * FROM schedule WHERE idScheduleStatus = 2 ORDER BY FROM_UNIXTIME(startDate)`;
     if (idCar) {
-        sql = `SELECT * FROM schedule WHERE idCar = ${idCar} AND idScheduleStatus = 2 ORDER BY FROM_UNIXTIME(startDay)`;
+        sql = `SELECT * FROM schedule WHERE idCar = ${idCar} AND idScheduleStatus = 2 ORDER BY FROM_UNIXTIME(startDate)`;
     }
     db.query(sql, (err, result) => {
         //error select data
