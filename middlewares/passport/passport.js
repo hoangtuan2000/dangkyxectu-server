@@ -1,7 +1,7 @@
 const passport = require("passport");
 const JwtStrategy = require("passport-jwt").Strategy;
 const { ExtractJwt } = require("passport-jwt");
-require('dotenv').config();
+require("dotenv").config();
 
 passport.use(
     new JwtStrategy(
@@ -12,7 +12,7 @@ passport.use(
         },
         (payload, done) => {
             try {
-            done(null, (user = payload));
+                done(null, (user = payload));
             } catch (err) {
                 done(err, false);
             }

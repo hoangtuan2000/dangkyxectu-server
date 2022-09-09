@@ -10,6 +10,7 @@ const Strings = {
         SERVICE_UNAVAILABLE: "Máy Chủ Không Có Sẵn",
         ERROR_GET_DATA: "Lỗi Lấy Dữ Liệu",
         YOUR_LOGIN_SESSION_EXPIRED: "Phiên Đăng Nhập Của Bạn Đã Hết Hạn",
+        NOT_PERMISSION_ACCESS: "Không Có Quyền Truy Cập",
     },
 };
 
