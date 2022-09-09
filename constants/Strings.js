@@ -9,6 +9,7 @@ const Strings = {
         NOT_ENOUGH_DATA: "Không Đủ Dữ Liệu",
         SERVICE_UNAVAILABLE: "Máy Chủ Không Có Sẵn",
         ERROR_GET_DATA: "Lỗi Lấy Dữ Liệu",
+        YOUR_LOGIN_SESSION_EXPIRED: "Phiên Đăng Nhập Của Bạn Đã Hết Hạn",
     },
 };
 

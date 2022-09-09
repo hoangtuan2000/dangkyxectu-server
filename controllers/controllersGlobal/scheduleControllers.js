@@ -24,6 +24,35 @@ const getScheduleList = async (req, res) => {
     });
 };
 
+const createSchedule = async (req, res) => {
+    const {
+        idCar,
+        startDate,
+        endDate,
+        startLocation,
+        endLocation,
+        reason,
+        note,
+        idWardStartLocation,
+        idWardEndLocation,
+    } = req.body;
+    let data = { ...Constants.ResultData };
+    res.send(
+        {
+            idCar,
+            startDate,
+            endDate,
+            startLocation,
+            endLocation,
+            reason,
+            note,
+            idWardStartLocation,
+            idWardEndLocation,
+        }
+    )
+};
+
 module.exports = {
     getScheduleList,
+    createSchedule,
 };

@@ -13,9 +13,7 @@ const signToken = (userID) => {
         process.env.KEY_SERCET_TOKEN
     );
 }
-const verifyToken = () => {}
 
 module.exports = {
-    signToken,
-    verifyToken
+    signToken
 }
