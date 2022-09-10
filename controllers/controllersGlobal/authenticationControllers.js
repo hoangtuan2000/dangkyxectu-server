@@ -77,6 +77,8 @@ const login = async (req, res) => {
 };
 
 const authentication = async (req, res, next) => {
+    const token = req.headers
+    console.log("token", token);
     let data = { ...Constants.ResultData };
     passport.authenticate("jwt", function (err, user, info) {
         if (err) {
@@ -93,7 +95,7 @@ const authentication = async (req, res, next) => {
             res.status(200).send(data);
         } else if (!user) {
             data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-            data.message = Strings.Common.ERROR;
+            data.message = Strings.Common.USER_NOT_EXIST;
             res.status(200).send(data);
         } else {
             data.status = Constants.ApiCode.OK;
@@ -120,7 +122,7 @@ const getUserToken = async (req, res, next) => {
             res.status(200).send(data);
         } else if (!user) {
             data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-            data.message = Strings.Common.ERROR;
+            data.message = Strings.Common.USER_NOT_EXIST;
             res.status(200).send(data);
         } else {
             const userID = user.sub;
@@ -163,7 +165,7 @@ const authenticationAdmin = async (req, res, next) => {
             res.status(200).send(data);
         } else if (!user) {
             data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-            data.message = Strings.Common.ERROR;
+            data.message = Strings.Common.USER_NOT_EXIST;
             res.status(200).send(data);
         }
          else {

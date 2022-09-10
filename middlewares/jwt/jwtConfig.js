@@ -8,7 +8,7 @@ const signToken = (userID) => {
             sub: userID ? userID : null,
             iat: new Date().getTime(),
             // exp: new Date().setDate(new Date().getDate() + 3),
-            exp: Math.floor(Date.now() / 1000) + (113),
+            exp: Math.floor(Date.now() / 1000) + (40),
         },
         process.env.KEY_SERCET_TOKEN
     );
