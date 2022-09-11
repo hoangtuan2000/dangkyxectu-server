@@ -10,7 +10,6 @@ const getScheduleList = async (req, res) => {
         sql = `SELECT * FROM schedule WHERE idCar = ${idCar} AND idScheduleStatus = 2 ORDER BY FROM_UNIXTIME(startDate)`;
     }
     db.query(sql, (err, result) => {
-        //error select data
         if (err) {
             data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
             data.message = Strings.Common.ERROR;
