@@ -6,6 +6,7 @@ var db = mysql.createConnection({
     user: process.env.USER_MYSQL,
     password: process.env.PASSWORD_MYSQL,
     database: process.env.DATABASE_MYSQL,
+    multipleStatements: true,
 });
 
 db.connect(function (err) {

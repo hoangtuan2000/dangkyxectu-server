@@ -1,23 +1,38 @@
 const db = require("../../models/index");
 const { Constants } = require("../../constants/Constants");
 const { Strings } = require("../../constants/Strings");
+const { executeQuery } = require("../../function");
 
 const getCommon = async (req, res) => {
-    const { common } = req.body;
+    const { group } = req.body;
+
     let data = { ...Constants.ResultData };
-    db.query(`SELECT * FROM ${common} WHERE 1`, (err, result) => {
-        //error select data
-        if (err) {
-            data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-            data.message = Strings.Common.ERROR;
-            res.status(200).send(data);
-        } else {
-            data.status = Constants.ApiCode.OK;
-            data.message = Strings.Common.SUCCESS;
-            data.data = [...result];
-            res.status(200).send(data);
+
+    if (group) {
+        const arrNameTables = group.split(",") || group;
+
+        for (let i = 0; i < arrNameTables.length; i++) {
+            const nameTable = arrNameTables[i].replace(/\s+|\s+/gm, ""); //remove space
+            const result = await executeQuery(db, `select * from ${nameTable}`);
+            if (!result) {
+                data.status = Constants.ApiCode.BAD_REQUEST;
+                data.message = Strings.Common.ERROR_GET_DATA;
+                data.data = [];
+                break;
+            } else {
+                const tempObject = {};
+                tempObject[`${nameTable}`] = [...result];
+                data.data = { ...data.data, ...tempObject };
+                data.status = Constants.ApiCode.OK;
+                data.message = Strings.Common.SUCCESS;
+            }
         }
-    });
+        res.status(200).send(data);
+    } else {
+        data.status = Constants.ApiCode.BAD_REQUEST;
+        data.message = Strings.Common.NOT_ENOUGH_DATA;
+        res.status(200).send(data);
+    }
 };
 
 module.exports = {
