@@ -1,7 +1,7 @@
 const db = require("../../models/index");
 const { Constants } = require("../../constants/Constants");
 const { Strings } = require("../../constants/Strings");
-const { executeQuery } = require("../../function");
+const { executeQuery } = require("../../common/function");
 
 const getCommon = async (req, res) => {
     const { group } = req.body;

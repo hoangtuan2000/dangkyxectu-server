@@ -12,6 +12,8 @@ const Strings = {
         YOUR_LOGIN_SESSION_EXPIRED: "Phiên Đăng Nhập Của Bạn Đã Hết Hạn",
         NOT_PERMISSION_ACCESS: "Không Có Quyền Truy Cập",
         USER_NOT_EXIST: "Người Dùng Không Tồn Tại",
+        DUPLICATE_SCHEDULE: "Lịch Trình Bị Trùng Lặp",
+        INVALID_DATE: "Ngày Không Hợp Lệ",
     },
 };
 

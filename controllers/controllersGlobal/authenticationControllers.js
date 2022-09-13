@@ -77,8 +77,6 @@ const login = async (req, res) => {
 };
 
 const authentication = async (req, res, next) => {
-    const token = req.headers
-    console.log("token", token);
     let data = { ...Constants.ResultData };
     passport.authenticate("jwt", function (err, user, info) {
         if (err) {
