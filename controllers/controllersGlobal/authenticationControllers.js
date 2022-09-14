@@ -39,7 +39,7 @@ const login = async (req, res) => {
             // get data user => token
             else {
                 db.query(
-                    "SELECT code, fullName, role.name as role FROM user, role WHERE CODE = ? AND user.idRole = role.idRole",
+                    "SELECT code, phone, fullName, role.name as role FROM user, role WHERE CODE = ? AND user.idRole = role.idRole",
                     [code],
                     (err, result) => {
                         //error select data
@@ -57,6 +57,7 @@ const login = async (req, res) => {
                                     token: jwtConfig.signToken(result[0].code),
                                     fullName: result[0].fullName,
                                     code: result[0].code,
+                                    phone: result[0].phone,
                                     role: result[0].role,
                                 };
                                 res.status(200).send(data);
@@ -124,7 +125,7 @@ const getUserToken = async (req, res, next) => {
             res.status(200).send(data);
         } else {
             const userID = user.sub;
-            const sql = "SELECT idUser FROM user WHERE code = ?";
+            const sql = "SELECT idUser, email FROM user WHERE code = ?";
             db.query(sql, [userID], (err, result) => {
                 if (err) {
                     data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;

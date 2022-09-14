@@ -3,7 +3,7 @@ const helper = {
         return value === undefined || value === null || value === "";
     },
 
-    checkStringLength: (value, len) => {
+    isValidStringLength: (value, len) => {
         if ((typeof value == "string" || typeof value == "number") && len) {
             value = value.toString();
             if (value.length <= len) {
