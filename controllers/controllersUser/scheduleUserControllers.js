@@ -25,9 +25,13 @@ const getUserRegisteredScheduleList = async (req, res) => {
                 let sql = `SELECT
                                 sc.idSchedule, sc.reason, sc.startDate, sc.endDate, sc.endLocation,
                                 ca.idCar, ca.image, ca.licensePlates, ca.idCarType,
+                                ct.name as carType, ct.seatNumber,
+                                ss.name as scheduleStatus,
                                 we.name as wardEnd, de.name as districtEnd, pe.name as provinceEnd
                             FROM schedule as sc
                             LEFT JOIN car as ca ON ca.idCar = sc.idCar
+                            LEFT JOIN car_type as ct ON ca.idCarType = ct.idCarType
+                            LEFT JOIN schedule_status as ss ON ss.idScheduleStatus = sc.idScheduleStatus
                             LEFT JOIN ward as we ON we.idWard = sc.idWardEndLocation
                             LEFT JOIN district as de ON de.idDistrict = we.idDistrict
                             LEFT JOIN province as pe ON pe.idProvince = de.idProvince
