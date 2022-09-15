@@ -2,7 +2,6 @@ const db = require("../../models/index");
 const { Constants } = require("../../constants/Constants");
 const { Strings } = require("../../constants/Strings");
 const { helper } = require("../../common/helper");
-const { sendMail } = require("../../middlewares/nodeMailer/nodeMailer");
 const { sendEmailCreateOrUpdateSchedule } = require("../../common/function");
 
 const getScheduleList = async (req, res) => {
@@ -12,6 +11,24 @@ const getScheduleList = async (req, res) => {
     if (idCar) {
         sql = `SELECT * FROM schedule WHERE idCar = ${idCar} AND idScheduleStatus = 2 ORDER BY FROM_UNIXTIME(startDate)`;
     }
+    db.query(sql, (err, result) => {
+        if (err) {
+            data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+            data.message = Strings.Common.ERROR;
+            res.status(200).send(data);
+        } else {
+            data.status = Constants.ApiCode.OK;
+            data.message = Strings.Common.SUCCESS;
+            data.data = [...result];
+            res.status(200).send(data);
+        }
+    });
+};
+
+const getScheduledDateForCar = async (req, res) => {
+    const { idCar } = req.body;
+    let data = { ...Constants.ResultData };
+    let sql = `SELECT idSchedule, startDate, endDate FROM schedule WHERE idCar = ${idCar} AND idScheduleStatus = 2 ORDER BY FROM_UNIXTIME(startDate)`;
     db.query(sql, (err, result) => {
         if (err) {
             data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
@@ -251,9 +268,9 @@ const getScheduleToSendEmail = (req, res) => {
     });
 };
 
-
 module.exports = {
     getScheduleList,
+    getScheduledDateForCar,
     createSchedule,
     checkScheduleDuplication,
     getScheduleToSendEmail,
