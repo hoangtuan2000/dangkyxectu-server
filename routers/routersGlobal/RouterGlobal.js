@@ -14,6 +14,5 @@ router.post('/getCar', carControllers.getCar)
 router.post('/getScheduleList', scheduleControllers.getScheduleList)
 router.post('/getScheduledDateForCar', scheduleControllers.getScheduledDateForCar)
 router.post('/createSchedule', authenticationControllers.getUserToken, scheduleControllers.checkScheduleDuplication, scheduleControllers.createSchedule, scheduleControllers.getScheduleToSendEmail)
-// router.post('/test', scheduleControllers.getScheduleToSendEmail)
 
 module.exports = router

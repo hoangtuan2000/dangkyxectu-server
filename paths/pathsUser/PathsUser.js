@@ -1,4 +1,4 @@
-// const RouterGlobal = require("../../routers/routersGlobal/RouterGlobal");
+const RouterUser = require("../../routers/routersUser/RouterUser");
 exports.setupPaths = function (app) {
-    // app.use("/api", RouterGlobal);
+    app.use("/api", RouterUser);
 };

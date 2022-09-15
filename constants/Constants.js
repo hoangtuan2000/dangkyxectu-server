@@ -1,8 +1,17 @@
 const Constants = {
     ResultData: {
-        status: '',
-        message: '',
-        data: {},
+        status: "",
+        message: "",
+        data: [],
+    },
+
+    ResultDataList: {
+        status: "",
+        message: "",
+        sizeQuerySnapshot: 0,
+        limitEntry: 0,
+        page: 0,
+        data: [],
     },
 
     ApiCode: {
@@ -14,6 +23,11 @@ const Constants = {
         REQUEST_TIMEOUT: 408,
         INTERNAL_SERVER_ERROR: 500,
         SERVICE_UNAVAILABLE: 503,
+    },
+
+    Common: {
+        PAGE: 1,
+        LIMIT_ENTRY: 10,
     },
 };
 
