@@ -133,7 +133,8 @@ const createOrUpdateReview = async (req, res) => {
                                 data.message = Strings.Common.SUCCESS;
                                 res.status(200).send(data);
                             } else {
-                                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                                data.status =
+                                    Constants.ApiCode.INTERNAL_SERVER_ERROR;
                                 data.message = Strings.Common.ERROR_SERVER;
                                 res.status(200).send(data);
                             }
@@ -157,7 +158,51 @@ const createOrUpdateReview = async (req, res) => {
     }
 };
 
+const updateScheduleApproved = async (req, res) => {
+    const { phoneUser, idSchedule } = req.body;
+
+    let data = { ...Constants.ResultData };
+
+    if (req.userToken) {
+        if (helper.isValidPhoneNumber(phoneUser)) {
+            let sql = `UPDATE schedule SET phoneUser=?, updatedAt=? WHERE idSchedule = ? AND idScheduleStatus = 2`;
+            let currentDate = helper.formatTimeStamp(new Date().getTime());
+            db.query(
+                sql,
+                [phoneUser, currentDate, idSchedule],
+                (err, result) => {
+                    if (err) {
+                        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                        data.message = Strings.Common.ERROR;
+                        res.status(200).send(data);
+                    } else {
+                        if (result.changedRows > 0) {
+                            data.status = Constants.ApiCode.OK;
+                            data.message = Strings.Common.SUCCESS;
+                            res.status(200).send(data);
+                        } else {
+                            data.status =
+                                Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                            data.message = Strings.Common.ERROR_SERVER;
+                            res.status(200).send(data);
+                        }
+                    }
+                }
+            );
+        } else {
+            data.status = Constants.ApiCode.BAD_REQUEST;
+            data.message = Strings.Common.INVALID_DATA;
+            res.status(200).send(data);
+        }
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
+
 module.exports = {
     getUserRegisteredScheduleList,
     createOrUpdateReview,
+    updateScheduleApproved,
 };

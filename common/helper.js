@@ -16,6 +16,11 @@ const helper = {
         }
     },
 
+    isValidPhoneNumber: (phoneNumber) => {
+        const regExp = new RegExp(/^([0]{1})([1-9]{1})([0-9]{8})$/);
+        return regExp.test(phoneNumber);
+    },
+
     compareBiggerDateTimeStamp: (startDateTimeStamp, endDateTimeStamp) => {
         return new Date(parseInt(startDateTimeStamp)) <=
             new Date(parseInt(endDateTimeStamp))
