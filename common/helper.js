@@ -26,6 +26,14 @@ const helper = {
     formatTimeStamp: (value) => {
         return Math.floor(parseInt(value) / 1000);
     },
+
+    isValidStarNumber: (value) => {
+        return parseFloat(value) > 0 && parseFloat(value) <= 5.0 ? true : false
+    },
+
+    formatStarNumber: (value) => {
+       return parseFloat(value) > 0 && parseFloat(value) <= 5.0 ? parseFloat(value).toFixed(1) : null
+    }
 };
 
 module.exports = {

@@ -3,5 +3,6 @@ const scheduleUserControllers = require('../../controllers/controllersUser/sched
 const router = require('express').Router()
 
 router.post('/getUserRegisteredScheduleList', authenticationControllers.getUserToken, scheduleUserControllers.getUserRegisteredScheduleList)
+router.post('/createOrUpdateReview', authenticationControllers.getUserToken, scheduleUserControllers.createOrUpdateReview)
 
 module.exports = router

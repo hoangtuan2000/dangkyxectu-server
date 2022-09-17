@@ -4,6 +4,55 @@ const { Strings } = require("../../constants/Strings");
 const { helper } = require("../../common/helper");
 const { sendEmailCreateOrUpdateSchedule } = require("../../common/function");
 
+const getSchedule = async (req, res) => {
+    const { idSchedule } = req.body;
+    let data = { ...Constants.ResultData };
+    let sql = `SELECT
+                    sc.idSchedule, sc.reason, sc.startDate, sc.endDate, sc.startLocation, sc.endLocation, sc.phoneUser,
+                    ca.idCar, ca.image, ca.licensePlates, ca.idCarType,
+                    ct.name as carType, ct.seatNumber,
+                    ss.name as scheduleStatus,
+                    re.idReview, re.starNumber, re.comment,
+                    cb.name as carBrand,
+                    us.fullName as fullNameUser, 
+                    dr.fullName as fullNameDriver, dr.phone as phoneDriver,
+                    ws.name as wardStart, ds.name as districtStart, ps.name as provinceStart,
+                    we.name as wardEnd, de.name as districtEnd, pe.name as provinceEnd
+                FROM schedule as sc
+                LEFT JOIN car as ca ON ca.idCar = sc.idCar
+                LEFT JOIN car_type as ct ON ca.idCarType = ct.idCarType
+                LEFT JOIN schedule_status as ss ON ss.idScheduleStatus = sc.idScheduleStatus
+                LEFT JOIN car_brand as cb ON cb.idCarBrand = ca.idCarBrand
+                LEFT JOIN ward as ws ON ws.idWard = sc.idWardEndLocation
+                LEFT JOIN district as ds ON ds.idDistrict = ws.idDistrict
+                LEFT JOIN province as ps ON ps.idProvince = ds.idProvince
+                LEFT JOIN ward as we ON we.idWard = sc.idWardEndLocation
+                LEFT JOIN district as de ON de.idDistrict = we.idDistrict
+                LEFT JOIN province as pe ON pe.idProvince = de.idProvince
+                LEFT JOIN review as re ON re.idSchedule = sc.idSchedule
+                LEFT JOIN user as us ON us.idUser = sc.idUser
+                LEFT JOIN user as dr ON dr.idUser = sc.idDriver
+                WHERE sc.idSchedule = ?`;
+    db.query(sql, [idSchedule], (err, result) => {
+        if (err) {
+            data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+            data.message = Strings.Common.ERROR;
+            res.status(200).send(data);
+        } else {
+            if (result.length > 0) {
+                data.status = Constants.ApiCode.OK;
+                data.message = Strings.Common.SUCCESS;
+                data.data = [...result];
+                res.status(200).send(data);
+            } else {
+                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                data.message = Strings.Common.ERROR_GET_DATA;
+                res.status(200).send(data);
+            }
+        }
+    });
+};
+
 const getScheduleList = async (req, res) => {
     const { idCar } = req.body;
     let data = { ...Constants.ResultData };
@@ -274,4 +323,5 @@ module.exports = {
     createSchedule,
     checkScheduleDuplication,
     getScheduleToSendEmail,
+    getSchedule,
 };

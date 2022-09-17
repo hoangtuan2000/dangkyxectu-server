@@ -14,6 +14,8 @@ const Strings = {
         USER_NOT_EXIST: "Người Dùng Không Tồn Tại",
         DUPLICATE_SCHEDULE: "Lịch Trình Bị Trùng Lặp",
         INVALID_DATE: "Ngày Không Hợp Lệ",
+        INVALID_REQUEST: "Yêu Cầu Không Hợp Lệ",
+        INVALID_DATA: "Dữ Liệu Không Hợp Lệ",
     },
 };
 

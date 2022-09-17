@@ -29,6 +29,14 @@ const Constants = {
         PAGE: 1,
         LIMIT_ENTRY: 10,
     },
+    
+    ScheduleStatus: {
+        PENDING: "Chờ Duyệt",
+        APPROVED: "Đã Duyệt",
+        COMPLETE: "Hoàn Thành",
+        CANCELLED: "Đã Hủy",
+        REFUSE: "Từ Chối",
+    },
 };
 
 module.exports = {
