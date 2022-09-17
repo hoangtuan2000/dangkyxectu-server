@@ -33,7 +33,7 @@ const getCarList = async (req, res) => {
             (SELECT * 
             FROM schedule as sc2
             WHERE 
-                FROM_UNIXTIME(sc2.startDate) IN
+                idScheduleStatus = 2 AND FROM_UNIXTIME(sc2.startDate) IN
                 (SELECT MAX(FROM_UNIXTIME(sc1.startDate)) as maxDate 
                 FROM schedule as sc1
                 WHERE sc1.idScheduleStatus = 2

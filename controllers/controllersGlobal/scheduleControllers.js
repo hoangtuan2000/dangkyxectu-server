@@ -8,16 +8,20 @@ const getSchedule = async (req, res) => {
     const { idSchedule } = req.body;
     let data = { ...Constants.ResultData };
     let sql = `SELECT
-                    sc.idSchedule, sc.reason, sc.startDate, sc.endDate, sc.startLocation, sc.endLocation, sc.phoneUser,
-                    ca.idCar, ca.image, ca.licensePlates, ca.idCarType,
+                    sc.idSchedule, sc.reason, sc.note, sc.startDate, sc.endDate, sc.startLocation, sc.endLocation, sc.phoneUser,
+                    ca.idCar, ca.image, ca.licensePlates, ca.idCarType, ca.idCarColor, ca.idCarBrand, ca.idCarStatus,
                     ct.name as carType, ct.seatNumber,
                     ss.name as scheduleStatus,
                     re.idReview, re.starNumber, re.comment,
                     cb.name as carBrand,
                     us.fullName as fullNameUser, 
                     dr.fullName as fullNameDriver, dr.phone as phoneDriver,
-                    ws.name as wardStart, ds.name as districtStart, ps.name as provinceStart,
-                    we.name as wardEnd, de.name as districtEnd, pe.name as provinceEnd
+                    ws.name as wardStart, ws.idWard as idWardStart, ws.type as wardTypeStart, ws.idDistrict as idDistrictWardStart,
+                    ds.name as districtStart, ds.idDistrict as idDistrictStart, ds.type as districtTypeStart, ds.idProvince as idProvinceDistrictStart,
+                    ps.name as provinceStart, ps.idProvince as idProvinceStart, ps.type as provinceTypeStart,
+                    we.name as wardEnd, we.idWard as idWardEnd, we.type as wardTypeEnd, we.idDistrict as idDistrictWardEnd,
+                    de.name as districtEnd, de.idDistrict as idDistrictEnd, de.type as districtTypeEnd, de.idProvince as idProvinceDistrictEnd,
+                    pe.name as provinceEnd, pe.idProvince as idProvinceEnd, pe.type as provinceTypeEnd
                 FROM schedule as sc
                 LEFT JOIN car as ca ON ca.idCar = sc.idCar
                 LEFT JOIN car_type as ct ON ca.idCarType = ct.idCarType
@@ -75,9 +79,12 @@ const getScheduleList = async (req, res) => {
 };
 
 const getScheduledDateForCar = async (req, res) => {
-    const { idCar } = req.body;
+    const { idCar, notSchedule } = req.body;
     let data = { ...Constants.ResultData };
     let sql = `SELECT idSchedule, startDate, endDate FROM schedule WHERE idCar = ${idCar} AND idScheduleStatus = 2 ORDER BY FROM_UNIXTIME(startDate)`;
+    if(notSchedule){
+        sql = `SELECT idSchedule, startDate, endDate FROM schedule WHERE idCar = ${idCar} AND idSchedule != ${notSchedule} AND idScheduleStatus = 2 ORDER BY FROM_UNIXTIME(startDate)`;
+    }
     db.query(sql, (err, result) => {
         if (err) {
             data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;

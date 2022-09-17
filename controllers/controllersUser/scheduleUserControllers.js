@@ -207,9 +207,9 @@ const cancelSchedule = async (req, res) => {
     let data = { ...Constants.ResultData };
 
     if (req.userToken) {
-        let sql = `UPDATE schedule SET updatedAt=?, idScheduleStatus=? WHERE idSchedule = ? AND (idScheduleStatus = 1 OR idScheduleStatus = 2)`
+        let sql = `UPDATE schedule SET updatedAt=?, idScheduleStatus=? WHERE idSchedule = ? AND (idScheduleStatus = 1 OR idScheduleStatus = 2)`;
         let currentDate = helper.formatTimeStamp(new Date().getTime());
-        let scheduleStatusCode = Constants.ScheduleStatusCode.CANCELLED
+        let scheduleStatusCode = Constants.ScheduleStatusCode.CANCELLED;
         db.query(
             sql,
             [currentDate, scheduleStatusCode, idSchedule],
@@ -224,8 +224,7 @@ const cancelSchedule = async (req, res) => {
                         data.message = Strings.Common.SUCCESS;
                         res.status(200).send(data);
                     } else {
-                        data.status =
-                            Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
                         data.message = Strings.Common.ERROR_SERVER;
                         res.status(200).send(data);
                     }
@@ -239,9 +238,90 @@ const cancelSchedule = async (req, res) => {
     }
 };
 
+const updateSchedulePending = async (req, res) => {
+    const {
+        startDate,
+        endDate,
+        startLocation,
+        endLocation,
+        reason,
+        note,
+        phoneUser,
+        idWardStartLocation,
+        idWardEndLocation,
+        idSchedule,
+    } = req.body;
+    let data = { ...Constants.ResultData };
+
+    if (
+        req.userToken &&
+        !helper.isNullOrEmpty(startDate) &&
+        !helper.isNullOrEmpty(endDate) &&
+        !helper.isNullOrEmpty(startLocation) &&
+        !helper.isNullOrEmpty(endLocation) &&
+        !helper.isNullOrEmpty(reason) &&
+        !helper.isNullOrEmpty(idWardStartLocation) &&
+        !helper.isNullOrEmpty(idWardEndLocation)
+    ) {
+        const startTimeStamp = helper.formatTimeStamp(startDate);
+        const endTimeStamp = helper.formatTimeStamp(endDate);
+
+        if (helper.compareBiggerDateTimeStamp(startTimeStamp, endTimeStamp)) {
+            const idUser = req.userToken.idUser;
+            const email = req.userToken.email;
+            const sql = `UPDATE schedule SET startDate =?, endDate =?, startLocation =?, endLocation =?, 
+                        reason =?, note =?, phoneUser =?, updatedAt =?, idWardStartLocation =?, 
+                        idWardEndLocation =? WHERE idSchedule =? AND idScheduleStatus = 1`;
+
+            const currentDate = helper.formatTimeStamp(new Date().getTime());
+
+            const dataSql = [
+                startTimeStamp,
+                endTimeStamp,
+                startLocation,
+                endLocation,
+                reason,
+                note,
+                phoneUser,
+                currentDate,
+                idWardStartLocation,
+                idWardEndLocation,
+                idSchedule,
+            ];
+
+            db.query(sql, [...dataSql], (error, result) => {
+                if (error) {
+                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                    data.message = Strings.Common.ERROR;
+                    res.status(200).send(data);
+                } else {
+                    if (result.affectedRows > 0) {
+                        data.status = Constants.ApiCode.OK;
+                        data.message = Strings.Common.SUCCESS;
+                        res.status(200).send(data);
+                    } else {
+                        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                        data.message = Strings.Common.ERROR;
+                        res.status(200).send(data);
+                    }
+                }
+            });
+        } else {
+            data.status = Constants.ApiCode.BAD_REQUEST;
+            data.message = Strings.Common.INVALID_DATE;
+            res.status(200).send(data);
+        }
+    } else {
+        data.status = Constants.ApiCode.BAD_REQUEST;
+        data.message = Strings.Common.NOT_ENOUGH_DATA;
+        res.status(200).send(data);
+    }
+};
+
 module.exports = {
     getUserRegisteredScheduleList,
     createOrUpdateReview,
     updateScheduleApproved,
     cancelSchedule,
+    updateSchedulePending,
 };

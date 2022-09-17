@@ -6,5 +6,6 @@ router.post('/getUserRegisteredScheduleList', authenticationControllers.getUserT
 router.post('/createOrUpdateReview', authenticationControllers.getUserToken, scheduleUserControllers.createOrUpdateReview)
 router.post('/updateScheduleApproved', authenticationControllers.getUserToken, scheduleUserControllers.updateScheduleApproved)
 router.post('/cancelSchedule', authenticationControllers.getUserToken, scheduleUserControllers.cancelSchedule)
+router.post('/updateSchedulePending', authenticationControllers.getUserToken, scheduleUserControllers.updateSchedulePending)
 
 module.exports = router
