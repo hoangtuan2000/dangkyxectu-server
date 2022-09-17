@@ -201,8 +201,47 @@ const updateScheduleApproved = async (req, res) => {
     }
 };
 
+const cancelSchedule = async (req, res) => {
+    const { idSchedule } = req.body;
+
+    let data = { ...Constants.ResultData };
+
+    if (req.userToken) {
+        let sql = `UPDATE schedule SET updatedAt=?, idScheduleStatus=? WHERE idSchedule = ? AND (idScheduleStatus = 1 OR idScheduleStatus = 2)`
+        let currentDate = helper.formatTimeStamp(new Date().getTime());
+        let scheduleStatusCode = Constants.ScheduleStatusCode.CANCELLED
+        db.query(
+            sql,
+            [currentDate, scheduleStatusCode, idSchedule],
+            (err, result) => {
+                if (err) {
+                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                    data.message = Strings.Common.ERROR;
+                    res.status(200).send(data);
+                } else {
+                    if (result.changedRows > 0) {
+                        data.status = Constants.ApiCode.OK;
+                        data.message = Strings.Common.SUCCESS;
+                        res.status(200).send(data);
+                    } else {
+                        data.status =
+                            Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                        data.message = Strings.Common.ERROR_SERVER;
+                        res.status(200).send(data);
+                    }
+                }
+            }
+        );
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
+
 module.exports = {
     getUserRegisteredScheduleList,
     createOrUpdateReview,
     updateScheduleApproved,
+    cancelSchedule,
 };

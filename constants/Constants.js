@@ -37,6 +37,14 @@ const Constants = {
         CANCELLED: "Đã Hủy",
         REFUSE: "Từ Chối",
     },
+
+    ScheduleStatusCode: {
+        PENDING: 1,
+        APPROVED: 2,
+        COMPLETE: 3,
+        CANCELLED: 4,
+        REFUSE: 5,
+    },
 };
 
 module.exports = {
