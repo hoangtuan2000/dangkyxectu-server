@@ -24,7 +24,7 @@ const getDriverScheduleList = async (req, res) => {
         } else {
             if (resultExecuteQuery.length > 0) {
                 let sql = `SELECT
-                                sc.idSchedule, sc.reason, sc.startDate, sc.endDate, sc.endLocation,
+                                sc.idSchedule, sc.reason, sc.startDate, sc.endDate, sc.endLocation, sc.startLocation,
                                 ca.idCar, ca.image, ca.licensePlates, ca.idCarType,
                                 ct.name as carType, ct.seatNumber,
                                 ss.name as scheduleStatus,
