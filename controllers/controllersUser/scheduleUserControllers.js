@@ -3,6 +3,9 @@ const { helper } = require("../../common/helper");
 const { Constants } = require("../../constants/Constants");
 const { Strings } = require("../../constants/Strings");
 const db = require("../../models/index");
+const {
+    getScheduleToSendEmail,
+} = require("../controllersGlobal/scheduleControllers");
 
 const getUserRegisteredScheduleList = async (req, res) => {
     let { page, limitEntry } = req.body;
@@ -180,6 +183,17 @@ const updateScheduleApproved = async (req, res) => {
                             data.status = Constants.ApiCode.OK;
                             data.message = Strings.Common.SUCCESS;
                             res.status(200).send(data);
+
+                            // call getScheduleToSendEmail function
+                            const idUser = req.userToken.idUser;
+                            const email = req.userToken.email;
+                            getScheduleToSendEmail(
+                                idSchedule,
+                                email,
+                                idUser,
+                                Strings.Common.UPDATE_PHONE_NUMBER_SUCCESS,
+                                Constants.Styles.COLOR_PRIMARY
+                            );
                         } else {
                             data.status =
                                 Constants.ApiCode.INTERNAL_SERVER_ERROR;
@@ -223,6 +237,17 @@ const cancelSchedule = async (req, res) => {
                         data.status = Constants.ApiCode.OK;
                         data.message = Strings.Common.SUCCESS;
                         res.status(200).send(data);
+
+                        // call getScheduleToSendEmail function
+                        const idUser = req.userToken.idUser;
+                        const email = req.userToken.email;
+                        getScheduleToSendEmail(
+                            idSchedule,
+                            email,
+                            idUser,
+                            Strings.Common.CANCEL_SUCCESSFUL_REGISTRATION,
+                            Constants.Styles.COLOR_ERROR
+                        );
                     } else {
                         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
                         data.message = Strings.Common.ERROR_SERVER;
@@ -246,6 +271,7 @@ const updateSchedulePending = async (req, res) => {
         endLocation,
         reason,
         note,
+        idCar, //use to checkScheduleDuplication function
         phoneUser,
         idWardStartLocation,
         idWardEndLocation,
@@ -299,6 +325,15 @@ const updateSchedulePending = async (req, res) => {
                         data.status = Constants.ApiCode.OK;
                         data.message = Strings.Common.SUCCESS;
                         res.status(200).send(data);
+
+                        // call getScheduleToSendEmail function
+                        getScheduleToSendEmail(
+                            idSchedule,
+                            email,
+                            idUser,
+                            Strings.Common.UPDATE_SUCCESS,
+                            Constants.Styles.COLOR_PRIMARY
+                        );
                     } else {
                         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
                         data.message = Strings.Common.ERROR;

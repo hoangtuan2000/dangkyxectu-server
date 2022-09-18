@@ -82,7 +82,7 @@ const getScheduledDateForCar = async (req, res) => {
     const { idCar, notSchedule } = req.body;
     let data = { ...Constants.ResultData };
     let sql = `SELECT idSchedule, startDate, endDate FROM schedule WHERE idCar = ${idCar} AND idScheduleStatus = 2 ORDER BY FROM_UNIXTIME(startDate)`;
-    if(notSchedule){
+    if (notSchedule) {
         sql = `SELECT idSchedule, startDate, endDate FROM schedule WHERE idCar = ${idCar} AND idSchedule != ${notSchedule} AND idScheduleStatus = 2 ORDER BY FROM_UNIXTIME(startDate)`;
     }
     db.query(sql, (err, result) => {
@@ -100,12 +100,12 @@ const getScheduledDateForCar = async (req, res) => {
 };
 
 const checkScheduleDuplication = async (req, res, next) => {
-    const { startDate, endDate } = req.body;
+    const { startDate, endDate, idCar, idSchedule } = req.body;
     let data = { ...Constants.ResultData };
     if (!helper.isNullOrEmpty(startDate) && !helper.isNullOrEmpty(endDate)) {
         const startTimeStamp = helper.formatTimeStamp(startDate);
         const endTimeStamp = helper.formatTimeStamp(endDate);
-        const sql = `SELECT 
+        let sql = `SELECT 
                         idSchedule, startDate, endDate, idScheduleStatus,
                         DATE(FROM_UNIXTIME(startDate)) as dateStart, 
                         DATE(FROM_UNIXTIME(endDate)) as dateEnd,
@@ -113,10 +113,27 @@ const checkScheduleDuplication = async (req, res, next) => {
                         DATE(FROM_UNIXTIME(${endTimeStamp})) as EndSend
                     FROM schedule 
                     WHERE 
-                        idScheduleStatus = 2 AND (( DATE(FROM_UNIXTIME(?)) BETWEEN DATE(FROM_UNIXTIME(startDate)) AND DATE(FROM_UNIXTIME(endDate))) 
+                        idCar = ${idCar} AND idScheduleStatus = 2 AND (( DATE(FROM_UNIXTIME(?)) BETWEEN DATE(FROM_UNIXTIME(startDate)) AND DATE(FROM_UNIXTIME(endDate))) 
                         OR ( DATE(FROM_UNIXTIME(?)) BETWEEN DATE(FROM_UNIXTIME(startDate)) AND DATE(FROM_UNIXTIME(endDate))) 
                         OR (DATE(FROM_UNIXTIME(startDate)) BETWEEN DATE(FROM_UNIXTIME(${startTimeStamp})) AND DATE(FROM_UNIXTIME(${endTimeStamp}))) 
                         OR (DATE(FROM_UNIXTIME(endDate)) BETWEEN DATE(FROM_UNIXTIME(${startTimeStamp})) AND DATE(FROM_UNIXTIME(${endTimeStamp}))))`;
+
+        // update scheduled pending => exist IdSchedule => not get date of that schedule
+        if (idSchedule) {
+            sql = `SELECT 
+                        idSchedule, startDate, endDate, idScheduleStatus,
+                        DATE(FROM_UNIXTIME(startDate)) as dateStart, 
+                        DATE(FROM_UNIXTIME(endDate)) as dateEnd,
+                        DATE(FROM_UNIXTIME(${startTimeStamp})) as StartSend,
+                        DATE(FROM_UNIXTIME(${endTimeStamp})) as EndSend
+                    FROM schedule 
+                    WHERE 
+                        idSchedule != ${idSchedule} AND idCar = ${idCar} AND idScheduleStatus = 2 AND (( DATE(FROM_UNIXTIME(?)) BETWEEN DATE(FROM_UNIXTIME(startDate)) AND DATE(FROM_UNIXTIME(endDate))) 
+                        OR ( DATE(FROM_UNIXTIME(?)) BETWEEN DATE(FROM_UNIXTIME(startDate)) AND DATE(FROM_UNIXTIME(endDate))) 
+                        OR (DATE(FROM_UNIXTIME(startDate)) BETWEEN DATE(FROM_UNIXTIME(${startTimeStamp})) AND DATE(FROM_UNIXTIME(${endTimeStamp}))) 
+                        OR (DATE(FROM_UNIXTIME(endDate)) BETWEEN DATE(FROM_UNIXTIME(${startTimeStamp})) AND DATE(FROM_UNIXTIME(${endTimeStamp}))))`;
+        }
+
         db.query(sql, [startDate, endDate], (err, result) => {
             if (err) {
                 data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
@@ -139,7 +156,7 @@ const checkScheduleDuplication = async (req, res, next) => {
     }
 };
 
-const createSchedule = async (req, res, next) => {
+const createSchedule = async (req, res) => {
     const {
         startDate,
         endDate,
@@ -224,13 +241,14 @@ const createSchedule = async (req, res, next) => {
                                         data.message = Strings.Common.SUCCESS;
                                         res.status(200).send(data);
 
-                                        // create variable for getScheduleToSendEmail function
-                                        req.idScheduleJustCreated =
-                                            results.insertId;
-                                        req.email = email;
-                                        req.idUser = idUser;
-                                        req.phoneUser = phone;
-                                        next();
+                                        // call getScheduleToSendEmail function
+                                        getScheduleToSendEmail(
+                                            results.insertId,
+                                            email,
+                                            idUser,
+                                            Strings.Common.SIGN_UP_SUCCESS,
+                                            Constants.Styles.COLOR_PRIMARY
+                                        );
                                     }
                                 });
                             } else {
@@ -255,16 +273,18 @@ const createSchedule = async (req, res, next) => {
     }
 };
 
-const getScheduleToSendEmail = (req, res) => {
-    const idScheduleJustCreated = req.idScheduleJustCreated;
-    const email = req.email;
-    const idUser = req.idUser;
-    const phoneUser = req.phoneUser;
+const getScheduleToSendEmail = (
+    idSchedule,
+    email,
+    idUser,
+    titleEmail,
+    colorTitleEmail
+) => {
     const sql = `SELECT 
                     ca.idCar, ca.image, ca.licensePlates, 
                     ct.name as carType, ct.seatNumber,
                     ss.name as scheduleStatus,
-                    sc.idSchedule, sc.startDate, sc.endDate, sc.startLocation, sc.endLocation, sc.createdAt,
+                    sc.idSchedule, sc.startDate, sc.reason, sc.phoneUser, sc.endDate, sc.startLocation, sc.endLocation, sc.createdAt, sc.updatedAt,
                     ws.name as wardStart, ds.name as districtStart, ps.name as provinceStart,
                     we.name as wardEnd, de.name as districtEnd, pe.name as provinceEnd,
                     us.fullName as fullNameUser,
@@ -282,12 +302,35 @@ const getScheduleToSendEmail = (req, res) => {
                 LEFT JOIN district as de ON we.idDistrict = de.idDistrict
                 LEFT JOIN province as pe ON de.idProvince = pe.idProvince
                 WHERE sc.idSchedule = ?`;
-    db.query(sql, [idUser, idScheduleJustCreated], (err, result) => {
+    db.query(sql, [idUser, idSchedule], (err, result) => {
         if (err) {
             console.log("Cannot send email err getScheduleToSendEmail", err);
         } else {
             if (result.length > 0) {
                 result = result[0];
+                let colorTextScheduleStatus = "";
+                switch (result.scheduleStatus) {
+                    case Constants.ScheduleStatus.PENDING:
+                        colorTextScheduleStatus =
+                            Constants.Styles.COLOR_PINK_LIGHT;
+                        break;
+                    case Constants.ScheduleStatus.APPROVED:
+                        colorTextScheduleStatus =
+                            Constants.Styles.COLOR_SUCCESS;
+                        break;
+                    case Constants.ScheduleStatus.COMPLETE:
+                        colorTextScheduleStatus =
+                            Constants.Styles.COLOR_BLUE_LIGHT;
+                        break;
+                    case Constants.ScheduleStatus.CANCELLED:
+                        colorTextScheduleStatus =
+                            Constants.Styles.COLOR_SECONDARY;
+                        break;
+                    case Constants.ScheduleStatus.REFUSE:
+                        colorTextScheduleStatus =
+                            Constants.Styles.COLOR_ERROR;
+                        break;
+                }
                 const startDate = new Date(
                     parseInt(result.startDate) * 1000
                 ).toLocaleDateString("en-GB");
@@ -296,26 +339,36 @@ const getScheduleToSendEmail = (req, res) => {
                 ).toLocaleDateString("en-GB");
                 const createdAt = new Date(
                     parseInt(result.createdAt) * 1000
-                ).toLocaleDateString("en-GB");
+                ).toLocaleString('en-GB')
+                const updatedAt =
+                    parseInt(result.updatedAt) > 0 &&
+                    new Date(
+                        parseInt(result.updatedAt) * 1000
+                    ).toLocaleString('en-GB')
                 const startLocation = `${result.startLocation} - ${result.wardStart} - ${result.districtStart} - ${result.provinceStart}`;
                 const endLocation = `${result.endLocation} - ${result.wardEnd} - ${result.districtEnd} - ${result.provinceEnd}`;
                 sendEmailCreateOrUpdateSchedule(
                     email,
-                    `Đăng Ký ${result.carType} ${result.seatNumber} Chổ (${idScheduleJustCreated})`,
+                    `Đăng Ký ${result.carType} ${result.seatNumber} Chổ ( Số: ${idSchedule} )`,
                     null,
                     result.image,
+                    titleEmail,
+                    colorTitleEmail,
                     result.carType,
                     result.seatNumber,
                     result.licensePlates,
                     result.scheduleStatus,
+                    colorTextScheduleStatus,
                     `${startDate} - ${endDate}`,
+                    result.reason,
                     startLocation,
                     endLocation,
                     result.fullNameUser,
-                    phoneUser,
+                    result.phoneUser,
                     result.fullNameDriver,
                     result.phoneDriver,
-                    createdAt
+                    createdAt,
+                    updatedAt
                 );
             } else {
                 console.log("Cannot send email err SQL getScheduleToSendEmail");

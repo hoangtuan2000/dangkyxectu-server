@@ -1,3 +1,4 @@
+const { Constants } = require("../constants/Constants");
 const { sendMail } = require("../middlewares/nodeMailer/nodeMailer");
 
 const executeQuery = async (connect, query, params) => {
@@ -17,18 +18,23 @@ const sendEmailCreateOrUpdateSchedule = (
     subject,
     text,
     srcImageCar,
+    title,
+    colorTitle,
     typeCar,
     seatNumber,
     licensePlates,
     scheduleStatus,
+    colorScheduleStatus,
     dateRange,
+    reason,
     startLocation,
     endLocation,
     fullNameUser,
     phoneUser,
     fullNameDriver,
     phoneDriver,
-    createAt,
+    createdAt,
+    updatedAt,
     linkScheduleWeb,
     linkScheduleApp
 ) => {
@@ -42,7 +48,14 @@ const sendEmailCreateOrUpdateSchedule = (
                     <li>Họ Tên: Đang Cập Nhật</li>
                     <li>Số Điện Thoại: Đang Cập Nhật</li>
                 </ul>`;
-                
+
+    const existUpdatedAt = updatedAt
+        ? `<p>
+                <span class="textContent">Ngày Cập Nhật:</span>
+                <span>${updatedAt}</span>
+            </p>`
+        : `<span></span>`;
+
     const html = `<!DOCTYPE html>
                     <html lang="en">
                         <head>
@@ -73,10 +86,18 @@ const sendEmailCreateOrUpdateSchedule = (
                                     text-align: left;
                                     font-size: 14px;
                                 }
-                                .textHeader {
+                                .textTitle {
                                     font-size: 16px;
                                     font-weight: bold;
-                                    color: blue;
+                                    color: ${
+                                        colorTitle
+                                            ? colorTitle
+                                            : Constants.Styles.COLOR_PRIMARY
+                                    }
+                                }
+                                .textHeader {
+                                    font-size: 15px;
+                                    font-weight: bold;
                                 }
                                 .textContent {
                                     font-style: italic;
@@ -89,7 +110,11 @@ const sendEmailCreateOrUpdateSchedule = (
                                 .textStatusSchedule {
                                     font-size: 17px;
                                     font-weight: bold;
-                                    color: green;
+                                    color: ${
+                                        colorScheduleStatus
+                                            ? colorScheduleStatus
+                                            : Constants.Styles.COLOR_SECONDARY
+                                    }
                                 }
                                 .buttonShowDetail {
                                     background-color: #3b8cff;
@@ -105,7 +130,7 @@ const sendEmailCreateOrUpdateSchedule = (
                                     border-width: 0px;
                                 }
                                 .textLink {
-                                    color: white;
+                                    color: white !important;
                                     text-decoration: none;
                                 }
                             </style>
@@ -119,6 +144,7 @@ const sendEmailCreateOrUpdateSchedule = (
                                         class="imageAvatar"
                                     />
                                     <div class="divContent">
+                                        <p class="textTitle">${title}</p>
                                         <p class="textHeader">${typeCar} ${seatNumber} Chổ</p>
                                         <p>
                                             <span class="textContent">Biển Số:</span>
@@ -131,6 +157,10 @@ const sendEmailCreateOrUpdateSchedule = (
                                         <p>
                                             <span class="textContent">Thời Gian:</span>
                                             <span class="textDate">${dateRange}</span>
+                                        </p>
+                                        <p>
+                                            <span class="textContent">Mục đích sử dụng xe:</span>
+                                            ${reason}
                                         </p>
                                         <p>
                                             <span class="textContent">Vị trí bắt đầu:</span>
@@ -156,8 +186,9 @@ const sendEmailCreateOrUpdateSchedule = (
 
                                         <p>
                                             <span class="textContent">Ngày Đăng Ký:</span>
-                                            <span>${createAt}</span>
+                                            <span>${createdAt}</span>
                                         </p>
+                                        ${existUpdatedAt}
                                     </div>
                                     <button class="buttonShowDetail">
                                         <a href="${linkScheduleWeb}" class="textLink"> Xem Thông Tin Chi Tiết </a>

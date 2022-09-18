@@ -29,7 +29,7 @@ const Constants = {
         PAGE: 1,
         LIMIT_ENTRY: 10,
     },
-    
+
     ScheduleStatus: {
         PENDING: "Chờ Duyệt",
         APPROVED: "Đã Duyệt",
@@ -44,6 +44,15 @@ const Constants = {
         COMPLETE: 3,
         CANCELLED: 4,
         REFUSE: 5,
+    },
+
+    Styles: {
+        COLOR_PRIMARY: "#1976d2",
+        COLOR_SUCCESS: "green",
+        COLOR_ERROR: "red",
+        COLOR_SECONDARY: "gray",
+        COLOR_PINK_LIGHT: "#ce93d8",
+        COLOR_BLUE_LIGHT: "#29b6f6",
     },
 };
 

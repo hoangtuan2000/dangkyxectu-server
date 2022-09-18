@@ -16,6 +16,10 @@ const Strings = {
         INVALID_DATE: "Ngày Không Hợp Lệ",
         INVALID_REQUEST: "Yêu Cầu Không Hợp Lệ",
         INVALID_DATA: "Dữ Liệu Không Hợp Lệ",
+        SIGN_UP_SUCCESS: "Đăng Ký Thành Công",
+        UPDATE_SUCCESS: "Cập Nhật Thành Công",
+        UPDATE_PHONE_NUMBER_SUCCESS: "Cập Nhật Số Điện Thoại Thành Công",
+        CANCEL_SUCCESSFUL_REGISTRATION: "Hủy Đăng Ký Thành Công",
     },
 };
 
