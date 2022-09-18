@@ -58,7 +58,7 @@ const getSchedule = async (req, res) => {
 };
 
 const getScheduleList = async (req, res) => {
-    const { idCar } = req.body;
+    const { idCar, idDriver } = req.body;
     let data = { ...Constants.ResultData };
     let sql = `SELECT * FROM schedule WHERE idScheduleStatus = 2 ORDER BY FROM_UNIXTIME(startDate)`;
     if (idCar) {

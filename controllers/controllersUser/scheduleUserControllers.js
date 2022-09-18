@@ -221,7 +221,8 @@ const cancelSchedule = async (req, res) => {
     let data = { ...Constants.ResultData };
 
     if (req.userToken) {
-        let sql = `UPDATE schedule SET updatedAt=?, idScheduleStatus=? WHERE idSchedule = ? AND (idScheduleStatus = 1 OR idScheduleStatus = 2)`;
+        let sql = `UPDATE schedule SET updatedAt=?, idScheduleStatus=? WHERE idSchedule = ? AND 
+                    (idScheduleStatus = 1 OR idScheduleStatus = 2) AND DATE(FROM_UNIXTIME(startDate)) > CURRENT_DATE()`;
         let currentDate = helper.formatTimeStamp(new Date().getTime());
         let scheduleStatusCode = Constants.ScheduleStatusCode.CANCELLED;
         db.query(
