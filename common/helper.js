@@ -33,12 +33,18 @@ const helper = {
     },
 
     isValidStarNumber: (value) => {
-        return parseFloat(value) > 0 && parseFloat(value) <= 5.0 ? true : false
+        return parseFloat(value) > 0 && parseFloat(value) <= 5.0 ? true : false;
     },
 
     formatStarNumber: (value) => {
-       return parseFloat(value) > 0 && parseFloat(value) <= 5.0 ? parseFloat(value).toFixed(1) : null
-    }
+        return parseFloat(value) > 0 && parseFloat(value) <= 5.0
+            ? parseFloat(value).toFixed(1)
+            : null;
+    },
+
+    isArray: (value) => {
+        return Array.isArray(value);
+    },
 };
 
 module.exports = {
