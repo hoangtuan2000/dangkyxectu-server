@@ -10,6 +10,7 @@ const getDriverScheduleList = async (req, res) => {
         limitEntry,
         status,
         carType,
+        scheduleCode,
         address,
         idWard,
         startDate,
@@ -68,10 +69,13 @@ const getDriverScheduleList = async (req, res) => {
                 }
                 conditionSql += sqlTemp;
             }
-            if (address) {
+            if (!helper.isNullOrEmpty(scheduleCode)) {
+                conditionSql += ` AND (sc.idSchedule = ${scheduleCode}) `;
+            }
+            if (!helper.isNullOrEmpty(address)) {
                 conditionSql += ` AND (sc.startLocation LIKE '%${address}%') `;
             }
-            if (idWard) {
+            if (!helper.isNullOrEmpty(idWard)) {
                 conditionSql += ` AND (sc.idWardStartLocation = '${idWard}' OR sc.idWardEndLocation = '${idWard}') `;
             }
             if (
