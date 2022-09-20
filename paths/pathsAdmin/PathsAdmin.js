@@ -1,5 +1,4 @@
-const testRouter = require("../../routers/routesAdmin/testRouter");
+const RoutersAdmin = require("../../routers/routersAdmin/RoutersAdmin");
 exports.setupPaths = function (app) {
-    app.use("/api/products", testRouter);
-    app.use("/api/products2", testRouter);
+    app.use("/api", RoutersAdmin);
 };

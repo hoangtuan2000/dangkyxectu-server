@@ -14,7 +14,8 @@ const getSchedule = async (req, res) => {
                     ss.name as scheduleStatus,
                     re.idReview, re.starNumber, re.comment,
                     cb.name as carBrand,
-                    us.fullName as fullNameUser, 
+                    cs.name as carStatus,
+                    us.fullName as fullNameUser, us.email,
                     dr.fullName as fullNameDriver, dr.phone as phoneDriver,
                     ws.name as wardStart, ws.idWard as idWardStart, ws.type as wardTypeStart, ws.idDistrict as idDistrictWardStart,
                     ds.name as districtStart, ds.idDistrict as idDistrictStart, ds.type as districtTypeStart, ds.idProvince as idProvinceDistrictStart,
@@ -27,6 +28,7 @@ const getSchedule = async (req, res) => {
                 LEFT JOIN car_type as ct ON ca.idCarType = ct.idCarType
                 LEFT JOIN schedule_status as ss ON ss.idScheduleStatus = sc.idScheduleStatus
                 LEFT JOIN car_brand as cb ON cb.idCarBrand = ca.idCarBrand
+                LEFT JOIN car_status as cs ON cs.idCarStatus = ca.idCarStatus
                 LEFT JOIN ward as ws ON ws.idWard = sc.idWardEndLocation
                 LEFT JOIN district as ds ON ds.idDistrict = ws.idDistrict
                 LEFT JOIN province as ps ON ps.idProvince = ds.idProvince
