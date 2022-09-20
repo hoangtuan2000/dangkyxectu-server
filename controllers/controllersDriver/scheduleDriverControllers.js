@@ -40,14 +40,14 @@ const getDriverScheduleList = async (req, res) => {
                 for (let i = 0; i < status.length; i++) {
                     if (i == 0) {
                         if (status.length > 1) {
-                            sqlTemp += ` AND ( sc.idScheduleStatus = ${status[i]} `;
+                            sqlTemp += ` AND ( sc.idScheduleStatus = '${status[i]}' `;
                         } else {
-                            sqlTemp += ` AND ( sc.idScheduleStatus = ${status[i]} ) `;
+                            sqlTemp += ` AND ( sc.idScheduleStatus = '${status[i]}' ) `;
                         }
                     } else if (i == status.length - 1) {
-                        sqlTemp += ` OR sc.idScheduleStatus = ${status[i]} ) `;
+                        sqlTemp += ` OR sc.idScheduleStatus = '${status[i]}' ) `;
                     } else {
-                        sqlTemp += ` OR sc.idScheduleStatus = ${status[i]} `;
+                        sqlTemp += ` OR sc.idScheduleStatus = '${status[i]}' `;
                     }
                 }
                 conditionSql += sqlTemp;
@@ -57,20 +57,20 @@ const getDriverScheduleList = async (req, res) => {
                 for (let i = 0; i < carType.length; i++) {
                     if (i == 0) {
                         if (carType.length > 1) {
-                            sqlTemp += ` AND ( ct.idCarType = ${carType[i]} `;
+                            sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' `;
                         } else {
-                            sqlTemp += ` AND ( ct.idCarType = ${carType[i]} ) `;
+                            sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' ) `;
                         }
                     } else if (i == carType.length - 1) {
-                        sqlTemp += ` OR ct.idCarType = ${carType[i]} ) `;
+                        sqlTemp += ` OR ct.idCarType = '${carType[i]}' ) `;
                     } else {
-                        sqlTemp += ` OR ct.idCarType = ${carType[i]} `;
+                        sqlTemp += ` OR ct.idCarType = '${carType[i]}' `;
                     }
                 }
                 conditionSql += sqlTemp;
             }
             if (!helper.isNullOrEmpty(scheduleCode)) {
-                conditionSql += ` AND (sc.idSchedule = ${scheduleCode}) `;
+                conditionSql += ` AND (sc.idSchedule = '${scheduleCode}') `;
             }
             if (!helper.isNullOrEmpty(address)) {
                 conditionSql += ` AND (sc.startLocation LIKE '%${address}%') `;
@@ -87,7 +87,7 @@ const getDriverScheduleList = async (req, res) => {
                 conditionSql += ` AND (( DATE(FROM_UNIXTIME(${startTimeStamp})) BETWEEN DATE(FROM_UNIXTIME(sc.startDate)) AND DATE(FROM_UNIXTIME(sc.endDate))) 
                 OR ( DATE(FROM_UNIXTIME(${endTimeStamp})) BETWEEN DATE(FROM_UNIXTIME(sc.startDate)) AND DATE(FROM_UNIXTIME(sc.endDate))) 
                 OR (DATE(FROM_UNIXTIME(sc.startDate)) BETWEEN DATE(FROM_UNIXTIME(${startTimeStamp})) AND DATE(FROM_UNIXTIME(${endTimeStamp}))) 
-                OR (DATE(FROM_UNIXTIME(sc.endDate)) BETWEEN DATE(FROM_UNIXTIME(${startTimeStamp})) AND DATE(FROM_UNIXTIME(${endTimeStamp}))))`;
+                OR (DATE(FROM_UNIXTIME(sc.endDate)) BETWEEN DATE(FROM_UNIXTIME(${startTimeStamp})) AND DATE(FROM_UNIXTIME(${endTimeStamp})))) `;
             }
             const resultExecuteQuery = await executeQuery(
                 db,
