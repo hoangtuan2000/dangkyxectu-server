@@ -17,6 +17,7 @@ const getSchedule = async (req, res) => {
                     cs.name as carStatus,
                     us.fullName as fullNameUser, us.email as emailUser,
                     dr.fullName as fullNameDriver, dr.phone as phoneDriver, dr.email as emailDriver,
+                    ad.fullName as fullNameAdmin,
                     ws.name as wardStart, ws.idWard as idWardStart, ws.type as wardTypeStart, ws.idDistrict as idDistrictWardStart,
                     ds.name as districtStart, ds.idDistrict as idDistrictStart, ds.type as districtTypeStart, ds.idProvince as idProvinceDistrictStart,
                     ps.name as provinceStart, ps.idProvince as idProvinceStart, ps.type as provinceTypeStart,
@@ -38,6 +39,7 @@ const getSchedule = async (req, res) => {
                 LEFT JOIN review as re ON re.idSchedule = sc.idSchedule
                 LEFT JOIN user as us ON us.idUser = sc.idUser
                 LEFT JOIN user as dr ON dr.idUser = sc.idDriver
+                LEFT JOIN user as ad ON ad.idUser = sc.idAdmin
                 WHERE sc.idSchedule = ?`;
     db.query(sql, [idSchedule], (err, result) => {
         if (err) {
