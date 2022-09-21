@@ -3,6 +3,12 @@ const scheduleAdminControllers = require("../../controllers/controllersAdmin/sch
 const router = require("express").Router();
 
 router.post(
+    "/getScheduleStatusList",
+    authenticationControllers.getUserToken,
+    scheduleAdminControllers.getScheduleStatusList
+);
+
+router.post(
     "/getAdminScheduleList",
     authenticationControllers.getUserToken,
     scheduleAdminControllers.getAdminScheduleList
@@ -12,6 +18,12 @@ router.post(
     "/getDriverListForSchedule",
     authenticationControllers.getUserToken,
     scheduleAdminControllers.getDriverListForSchedule
+);
+
+router.post(
+    "/updateSchedule",
+    authenticationControllers.authenticationAdmin,
+    scheduleAdminControllers.updateSchedule
 );
 
 module.exports = router;

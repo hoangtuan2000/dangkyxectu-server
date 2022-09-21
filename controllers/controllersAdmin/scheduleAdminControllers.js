@@ -4,6 +4,23 @@ const { Constants } = require("../../constants/Constants");
 const { Strings } = require("../../constants/Strings");
 const db = require("../../models/index");
 
+const getScheduleStatusList = (req, res) => {
+    let data = { ...Constants.ResultData };
+    const sql = `SELECT * FROM schedule_status WHERE idScheduleStatus != 4`;
+    db.query(sql, (err, result) => {
+        if (err) {
+            data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+            data.message = Strings.Common.ERROR_SERVER;
+            res.status(200).send(data);
+        } else {
+            data.status = Constants.ApiCode.OK;
+            data.message = Strings.Common.SUCCESS;
+            data.data = [...result];
+            res.status(200).send(data);
+        }
+    });
+};
+
 const getAdminScheduleList = async (req, res) => {
     let {
         page,
@@ -158,11 +175,14 @@ const getDriverListForSchedule = async (req, res) => {
         let sql = `
                 SELECT dr.idUser as idDriver, dr.fullName as fullNameDriver, dr.code as codeDriver
                 FROM user as dr
-                WHERE dr.idDriverLicense IN 
+                WHERE 
+                    dr.idUserStatus = 1
+                    AND DATE(FROM_UNIXTIME(dr.driverLicenseExpirationDate)) > CURRENT_DATE()
+                    AND dr.idDriverLicense IN 
                         (SELECT dld.idDriverLicense
                         FROM car as ca,  driver_license_detail as dld, schedule as sc
                         WHERE ca.idCar = ? AND dld.idCarType = ca.idCarType)
-                AND dr.idUser NOT IN 
+                    AND dr.idUser NOT IN 
                         (SELECT idDriver 
                         FROM schedule as sc
                         WHERE (( DATE(FROM_UNIXTIME(${startTimeStamp})) BETWEEN DATE(FROM_UNIXTIME(sc.startDate)) AND DATE(FROM_UNIXTIME(sc.endDate))) 
@@ -188,7 +208,45 @@ const getDriverListForSchedule = async (req, res) => {
     }
 };
 
+const updateSchedule = async (req, res) => {
+    let { idSchedule, idScheduleStatus, idDriver } = req.body;
+    let data = { ...Constants.ResultData };
+    if (req.userToken) {
+        // check schedule status old
+        let sqlExecuteQuery = `SELECT idScheduleStatus FROM schedule WHERE idSchedule = ${idSchedule}`
+        const resultExecuteQuery = await executeQuery(
+            db,sqlExecuteQuery
+        );
+        
+        if (!resultExecuteQuery) {
+            data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+            data.message = Strings.Common.ERROR_GET_DATA;
+            res.status(200).send(data);
+        }
+
+        // const sql = ``;
+        // db.query(sql, (err, result) => {
+        //     if (err) {
+        //         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        //         data.message = Strings.Common.ERROR_SERVER;
+        //         res.status(200).send(data);
+        //     } else {
+        //         data.status = Constants.ApiCode.OK;
+        //         data.message = Strings.Common.SUCCESS;
+        //         data.data = [...result];
+        //         res.status(200).send(data);
+        //     }
+        // });
+    } else {
+        ata.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
+
 module.exports = {
     getAdminScheduleList,
     getDriverListForSchedule,
+    getScheduleStatusList,
+    updateSchedule,
 };
