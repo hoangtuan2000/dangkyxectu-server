@@ -148,6 +148,47 @@ const getAdminScheduleList = async (req, res) => {
     }
 };
 
+const getDriverListForSchedule = async (req, res) => {
+    let { idCar, startDate, endDate } = req.body;
+    let data = { ...Constants.ResultData };
+
+    if (req.userToken) {
+        const startTimeStamp = helper.formatTimeStamp(startDate);
+        const endTimeStamp = helper.formatTimeStamp(endDate);
+        let sql = `
+                SELECT dr.idUser as idDriver, dr.fullName as fullNameDriver, dr.code as codeDriver
+                FROM user as dr
+                WHERE dr.idDriverLicense IN 
+                        (SELECT dld.idDriverLicense
+                        FROM car as ca,  driver_license_detail as dld, schedule as sc
+                        WHERE ca.idCar = ? AND dld.idCarType = ca.idCarType)
+                AND dr.idUser NOT IN 
+                        (SELECT idDriver 
+                        FROM schedule as sc
+                        WHERE (( DATE(FROM_UNIXTIME(${startTimeStamp})) BETWEEN DATE(FROM_UNIXTIME(sc.startDate)) AND DATE(FROM_UNIXTIME(sc.endDate))) 
+                            OR ( DATE(FROM_UNIXTIME(${endTimeStamp})) BETWEEN DATE(FROM_UNIXTIME(sc.startDate)) AND DATE(FROM_UNIXTIME(sc.endDate))) 
+                            OR (DATE(FROM_UNIXTIME(sc.startDate)) BETWEEN DATE(FROM_UNIXTIME(${startTimeStamp})) AND DATE(FROM_UNIXTIME(${endTimeStamp}))) 
+                            OR (DATE(FROM_UNIXTIME(sc.endDate)) BETWEEN DATE(FROM_UNIXTIME(${startTimeStamp})) AND DATE(FROM_UNIXTIME(${endTimeStamp})))) AND idScheduleStatus = 2 )`;
+        db.query(sql, [idCar], (err, result) => {
+            if (err) {
+                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                data.message = Strings.Common.ERROR;
+                res.status(200).send(data);
+            } else {
+                data.status = Constants.ApiCode.OK;
+                data.message = Strings.Common.SUCCESS;
+                data.data = [...result];
+                res.status(200).send(data);
+            }
+        });
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
+
 module.exports = {
-    getAdminScheduleList
+    getAdminScheduleList,
+    getDriverListForSchedule,
 };

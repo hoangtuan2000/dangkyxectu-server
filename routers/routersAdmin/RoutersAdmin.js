@@ -8,4 +8,10 @@ router.post(
     scheduleAdminControllers.getAdminScheduleList
 );
 
+router.post(
+    "/getDriverListForSchedule",
+    authenticationControllers.getUserToken,
+    scheduleAdminControllers.getDriverListForSchedule
+);
+
 module.exports = router;

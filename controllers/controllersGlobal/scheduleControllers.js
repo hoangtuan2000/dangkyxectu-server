@@ -8,16 +8,17 @@ const getSchedule = async (req, res) => {
     const { idSchedule } = req.body;
     let data = { ...Constants.ResultData };
     let sql = `SELECT
-                    sc.idSchedule, sc.reason, sc.note, sc.startDate, sc.endDate, sc.startLocation, sc.endLocation, sc.phoneUser,
+                    sc.idSchedule, sc.reason, sc.note, sc.startDate, sc.endDate, sc.startLocation, sc.endLocation, sc.phoneUser, sc.createdAt, sc.updatedAt,
                     ca.idCar, ca.image, ca.licensePlates, ca.idCarType, ca.idCarColor, ca.idCarBrand, ca.idCarStatus,
                     ct.name as carType, ct.seatNumber,
-                    ss.name as scheduleStatus,
+                    ss.name as scheduleStatus, ss.idScheduleStatus,
                     re.idReview, re.starNumber, re.comment,
                     cb.name as carBrand,
                     cs.name as carStatus,
-                    us.fullName as fullNameUser, us.email as emailUser,
-                    dr.fullName as fullNameDriver, dr.phone as phoneDriver, dr.email as emailDriver,
-                    ad.fullName as fullNameAdmin,
+                    us.fullName as fullNameUser, us.email as emailUser, us.code as codeUser,
+                    dr.idUser as idDriver, dr.fullName as fullNameDriver, dr.phone as phoneDriver, dr.email as emailDriver, dr.code as codeDriver,
+                    ad.fullName as fullNameAdmin, ad.code as codeAdmin,
+                    fa.name as nameFaculty,
                     ws.name as wardStart, ws.idWard as idWardStart, ws.type as wardTypeStart, ws.idDistrict as idDistrictWardStart,
                     ds.name as districtStart, ds.idDistrict as idDistrictStart, ds.type as districtTypeStart, ds.idProvince as idProvinceDistrictStart,
                     ps.name as provinceStart, ps.idProvince as idProvinceStart, ps.type as provinceTypeStart,
@@ -40,6 +41,7 @@ const getSchedule = async (req, res) => {
                 LEFT JOIN user as us ON us.idUser = sc.idUser
                 LEFT JOIN user as dr ON dr.idUser = sc.idDriver
                 LEFT JOIN user as ad ON ad.idUser = sc.idAdmin
+                LEFT JOIN faculty as fa ON fa.idFaculty = us.idFaculty
                 WHERE sc.idSchedule = ?`;
     db.query(sql, [idSchedule], (err, result) => {
         if (err) {
