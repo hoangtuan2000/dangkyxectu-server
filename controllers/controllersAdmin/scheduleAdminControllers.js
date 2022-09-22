@@ -235,7 +235,7 @@ const updateSchedule = async (req, res) => {
     if (req.userToken) {
         const idAdmin = req.userToken.idUser;
         // get schedule status old and date
-        let sqlExecuteQuery = `SELECT idScheduleStatus, startDate FROM schedule WHERE idSchedule = ${idSchedule}`;
+        let sqlExecuteQuery = `SELECT idScheduleStatus, startDate, idDriver FROM schedule WHERE idSchedule = ${idSchedule}`;
         const resultExecuteQuery = await executeQuery(db, sqlExecuteQuery);
 
         if (!resultExecuteQuery) {
@@ -247,6 +247,11 @@ const updateSchedule = async (req, res) => {
                 (resultExecuteQuery &&
                     resultExecuteQuery.length > 0 &&
                     resultExecuteQuery[0].idScheduleStatus) ||
+                null;
+            const idDriverOld =
+                (resultExecuteQuery &&
+                    resultExecuteQuery.length > 0 &&
+                    resultExecuteQuery[0].idDriver) ||
                 null;
             // check data => format SQL
             if (
@@ -310,11 +315,16 @@ const updateSchedule = async (req, res) => {
                             helper.isDateTimeStampGreaterThanCurrentDate(
                                 resultExecuteQuery[0].startDate
                             ) &&
-                            idDriver
+                            idDriver &&
+                            idDriver != idDriverOld
                         ) {
                             sql = `UPDATE schedule SET updatedAt=${currentDate}, idAdmin=${idAdmin}, 
                             idDriver=${idDriver} WHERE idSchedule = ${idSchedule}`;
                             executeUpdate(sql);
+                        } else {
+                            data.status = Constants.ApiCode.BAD_REQUEST;
+                            data.message = Strings.Common.INVALID_DATA;
+                            res.status(200).send(data);
                         }
                         break;
                 }
