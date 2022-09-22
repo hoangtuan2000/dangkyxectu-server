@@ -211,32 +211,119 @@ const getDriverListForSchedule = async (req, res) => {
 const updateSchedule = async (req, res) => {
     let { idSchedule, idScheduleStatus, idDriver } = req.body;
     let data = { ...Constants.ResultData };
+
+    const executeUpdate = (SQL) => {
+        db.query(SQL, (err, result) => {
+            if (err) {
+                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                data.message = Strings.Common.ERROR_SERVER;
+                res.status(200).send(data);
+            } else {
+                if (result.changedRows > 0) {
+                    data.status = Constants.ApiCode.OK;
+                    data.message = Strings.Common.SUCCESS;
+                    res.status(200).send(data);
+                } else {
+                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                    data.message = Strings.Common.ERROR_SERVER;
+                    res.status(200).send(data);
+                }
+            }
+        });
+    };
+
     if (req.userToken) {
-        // check schedule status old
-        let sqlExecuteQuery = `SELECT idScheduleStatus FROM schedule WHERE idSchedule = ${idSchedule}`
-        const resultExecuteQuery = await executeQuery(
-            db,sqlExecuteQuery
-        );
-        
+        const idAdmin = req.userToken.idUser;
+        // get schedule status old and date
+        let sqlExecuteQuery = `SELECT idScheduleStatus, startDate FROM schedule WHERE idSchedule = ${idSchedule}`;
+        const resultExecuteQuery = await executeQuery(db, sqlExecuteQuery);
+
         if (!resultExecuteQuery) {
             data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
             data.message = Strings.Common.ERROR_GET_DATA;
             res.status(200).send(data);
-        }
+        } else {
+            const idScheduleStatusOld =
+                (resultExecuteQuery &&
+                    resultExecuteQuery.length > 0 &&
+                    resultExecuteQuery[0].idScheduleStatus) ||
+                null;
+            // check data => format SQL
+            if (
+                (idScheduleStatusOld == Constants.ScheduleStatusCode.PENDING &&
+                    helper.isDateTimeStampGreaterThanCurrentDate(
+                        resultExecuteQuery[0].startDate
+                    )) ||
+                idScheduleStatusOld == Constants.ScheduleStatusCode.APPROVED
+            ) {
+                let sql = "";
+                const currentDate = helper.formatTimeStamp(
+                    new Date().getTime()
+                );
+                switch (idScheduleStatusOld) {
+                    // if idScheduleStatus old is pending => (check startDate < current date)
+                    case Constants.ScheduleStatusCode.PENDING:
+                        // check: idScheduleStatus new is approved => update status and driver (check startDate < current date)
+                        if (
+                            idScheduleStatus ==
+                                Constants.ScheduleStatusCode.APPROVED &&
+                            idDriver
+                        ) {
+                            sql = `UPDATE schedule SET updatedAt=${currentDate}, idAdmin=${idAdmin}, 
+                            idDriver=${idDriver}, idScheduleStatus=${idScheduleStatus} WHERE idSchedule = ${idSchedule}`;
+                            executeUpdate(sql);
+                        }
+                        // the updated data is the same as the server data => Old dScheduleStatus = New idScheduleStatus
+                        else if (
+                            idScheduleStatus ==
+                            Constants.ScheduleStatusCode.PENDING
+                        ) {
+                            data.status = Constants.ApiCode.BAD_REQUEST;
+                            data.message = Strings.Common.INVALID_DATA;
+                            res.status(200).send(data);
+                        }
+                        // if idScheduleStatus new not is approved => only update status
+                        else if (
+                            idScheduleStatus !=
+                            Constants.ScheduleStatusCode.APPROVED
+                        ) {
+                            sql = `UPDATE schedule SET updatedAt=${currentDate}, idAdmin=${idAdmin}, 
+                             idScheduleStatus=${idScheduleStatus} WHERE idSchedule = ${idSchedule}`;
+                            executeUpdate(sql);
+                        }
+                        break;
 
-        // const sql = ``;
-        // db.query(sql, (err, result) => {
-        //     if (err) {
-        //         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-        //         data.message = Strings.Common.ERROR_SERVER;
-        //         res.status(200).send(data);
-        //     } else {
-        //         data.status = Constants.ApiCode.OK;
-        //         data.message = Strings.Common.SUCCESS;
-        //         data.data = [...result];
-        //         res.status(200).send(data);
-        //     }
-        // });
+                    // if idScheduleStatus old is approved => update status complete (check startDate >= current date)
+                    case Constants.ScheduleStatusCode.APPROVED:
+                        // complete schedule
+                        if (
+                            idScheduleStatus ==
+                                Constants.ScheduleStatusCode.COMPLETE &&
+                            !helper.isDateTimeStampGreaterThanCurrentDate(
+                                resultExecuteQuery[0].startDate
+                            )
+                        ) {
+                            sql = `UPDATE schedule SET updatedAt=${currentDate}, idAdmin=${idAdmin}, 
+                                 idScheduleStatus=${idScheduleStatus} WHERE idSchedule = ${idSchedule}`;
+                            executeUpdate(sql);
+                        } else if (
+                            helper.isDateTimeStampGreaterThanCurrentDate(
+                                resultExecuteQuery[0].startDate
+                            ) &&
+                            idDriver
+                        ) {
+                            sql = `UPDATE schedule SET updatedAt=${currentDate}, idAdmin=${idAdmin}, 
+                            idDriver=${idDriver} WHERE idSchedule = ${idSchedule}`;
+                            executeUpdate(sql);
+                        }
+                        break;
+                }
+            } else {
+                data.status = Constants.ApiCode.BAD_REQUEST;
+                data.message = Strings.Common.INVALID_REQUEST;
+                res.status(200).send(data);
+            }
+        }
     } else {
         ata.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
         data.message = Strings.Common.USER_NOT_EXIST;
