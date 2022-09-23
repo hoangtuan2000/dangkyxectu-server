@@ -4,21 +4,36 @@ const { Constants } = require("../../constants/Constants");
 const { Strings } = require("../../constants/Strings");
 const db = require("../../models/index");
 
-const getScheduleStatusList = (req, res) => {
+const getAdminScheduleStatusListToUpdate = (req, res) => {
+    const { idScheduleStatus } = req.body;
     let data = { ...Constants.ResultData };
-    const sql = `SELECT * FROM schedule_status WHERE idScheduleStatus != 4`;
-    db.query(sql, (err, result) => {
-        if (err) {
-            data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-            data.message = Strings.Common.ERROR_SERVER;
+
+    const executeSQL = (SQL) => {
+        db.query(SQL, (err, result) => {
+            if (err) {
+                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                data.message = Strings.Common.ERROR_SERVER;
+                res.status(200).send(data);
+            } else {
+                data.status = Constants.ApiCode.OK;
+                data.message = Strings.Common.SUCCESS;
+                data.data = [...result];
+                res.status(200).send(data);
+            }
+        });
+    };
+
+    switch (idScheduleStatus) {
+        case Constants.ScheduleStatusCode.PENDING:
+            const sql = `SELECT * FROM schedule_status WHERE idScheduleStatus IN (2, 5)`;
+            executeSQL(sql);
+            break;
+        default:
+            data.status = Constants.ApiCode.BAD_REQUEST;
+            data.message = Strings.Common.INVALID_DATA;
             res.status(200).send(data);
-        } else {
-            data.status = Constants.ApiCode.OK;
-            data.message = Strings.Common.SUCCESS;
-            data.data = [...result];
-            res.status(200).send(data);
-        }
-    });
+            break;
+    }
 };
 
 const getAdminScheduleList = async (req, res) => {
@@ -27,12 +42,17 @@ const getAdminScheduleList = async (req, res) => {
         limitEntry,
         status,
         carType,
+        faculty,
+        infoUser,
+        infoDriver,
+        licensePlates,
         scheduleCode,
         address,
         idWard,
         startDate,
         endDate,
     } = req.body;
+
     page = parseInt(page) || Constants.Common.PAGE;
     limitEntry = parseInt(limitEntry) || Constants.Common.LIMIT_ENTRY;
     let data = { ...Constants.ResultData };
@@ -41,16 +61,25 @@ const getAdminScheduleList = async (req, res) => {
     if (req.userToken) {
         if (
             (status && !helper.isArray(status)) ||
-            (carType && !helper.isArray(carType))
+            (carType && !helper.isArray(carType)) ||
+            (faculty && !helper.isArray(faculty))
         ) {
             data.status = Constants.ApiCode.BAD_REQUEST;
             data.message = Strings.Common.INVALID_DATA;
             res.status(200).send(data);
         } else {
             const idUser = req.userToken.idUser;
-            let sqlExecuteQuery = `SELECT COUNT(idSchedule) as sizeQuerySnapshot FROM schedule as sc, car as ca, car_type as ct
-            WHERE sc.idCar = ca.idCar AND ca.idCarType = ct.idCarType `;
+            let sqlExecuteQuery = `SELECT COUNT(idSchedule) as sizeQuerySnapshot
+                                    FROM 
+                                        schedule as sc
+                                    LEFT JOIN car as ca ON ca.idCar = sc.idCar
+                                    LEFT JOIN car_type as ct ON ct.idCarType = ca.idCarType
+                                    LEFT JOIN user as us ON us.idUser = sc.idUser
+                                    LEFT JOIN user as dr ON dr.idUser = sc.idDriver
+                                    LEFT JOIN faculty as fa ON fa.idFaculty = us.idFaculty
+                                    WHERE 1 = 1 `;
 
+            // CHECK CONDITION SQL
             let conditionSql = "";
             if (status && status.length > 0) {
                 let sqlTemp = "";
@@ -86,11 +115,37 @@ const getAdminScheduleList = async (req, res) => {
                 }
                 conditionSql += sqlTemp;
             }
+            if (faculty && faculty.length > 0) {
+                let sqlTemp = "";
+                for (let i = 0; i < faculty.length; i++) {
+                    if (i == 0) {
+                        if (faculty.length > 1) {
+                            sqlTemp += ` AND ( fa.idFaculty = '${faculty[i]}' `;
+                        } else {
+                            sqlTemp += ` AND ( fa.idFaculty = '${faculty[i]}' ) `;
+                        }
+                    } else if (i == faculty.length - 1) {
+                        sqlTemp += ` OR fa.idFaculty = '${faculty[i]}' ) `;
+                    } else {
+                        sqlTemp += ` OR fa.idFaculty = '${faculty[i]}' `;
+                    }
+                }
+                conditionSql += sqlTemp;
+            }
             if (!helper.isNullOrEmpty(scheduleCode)) {
                 conditionSql += ` AND (sc.idSchedule = '${scheduleCode}') `;
             }
             if (!helper.isNullOrEmpty(address)) {
                 conditionSql += ` AND (sc.startLocation LIKE '%${address}%') `;
+            }
+            if (!helper.isNullOrEmpty(infoUser)) {
+                conditionSql += ` AND (us.fullName LIKE '%${infoUser}%' OR us.code LIKE '%${infoUser}%') `;
+            }
+            if (!helper.isNullOrEmpty(infoDriver)) {
+                conditionSql += ` AND (dr.fullName LIKE '%${infoDriver}%' OR dr.code LIKE '%${infoDriver}%') `;
+            }
+            if (!helper.isNullOrEmpty(licensePlates)) {
+                conditionSql += ` AND (ca.licensePlates LIKE '%${licensePlates}%') `;
             }
             if (!helper.isNullOrEmpty(idWard)) {
                 conditionSql += ` AND (sc.idWardStartLocation = '${idWard}' OR sc.idWardEndLocation = '${idWard}') `;
@@ -107,6 +162,7 @@ const getAdminScheduleList = async (req, res) => {
                 OR (DATE(FROM_UNIXTIME(sc.endDate)) BETWEEN DATE(FROM_UNIXTIME(${startTimeStamp})) AND DATE(FROM_UNIXTIME(${endTimeStamp})))) `;
             }
 
+            // EXECUTE SQL
             const resultExecuteQuery = await executeQuery(
                 db,
                 `${sqlExecuteQuery} ${conditionSql}`
@@ -121,6 +177,7 @@ const getAdminScheduleList = async (req, res) => {
                                 sc.idSchedule, sc.reason, sc.startDate, sc.endDate, sc.endLocation,
                                 ca.idCar, ca.image, ca.licensePlates, ca.idCarType,
                                 us.fullName as fullNameUser, us.code as codeUser,
+                                dr.fullName as fullNameDriver, dr.code as codeDriver,
                                 fa.name as nameFaculty,
                                 ct.name as carType, ct.seatNumber,
                                 ss.name as scheduleStatus,
@@ -129,6 +186,7 @@ const getAdminScheduleList = async (req, res) => {
                             FROM schedule as sc
                             LEFT JOIN car as ca ON ca.idCar = sc.idCar
                             LEFT JOIN user as us ON us.idUser = sc.idUser
+                            LEFT JOIN user as dr ON dr.idUser = sc.idDriver
                             LEFT JOIN faculty as fa ON fa.idFaculty = us.idFaculty
                             LEFT JOIN car_type as ct ON ca.idCarType = ct.idCarType
                             LEFT JOIN schedule_status as ss ON ss.idScheduleStatus = sc.idScheduleStatus
@@ -136,6 +194,7 @@ const getAdminScheduleList = async (req, res) => {
                             LEFT JOIN district as de ON de.idDistrict = we.idDistrict
                             LEFT JOIN province as pe ON pe.idProvince = de.idProvince
                             LEFT JOIN review as re ON re.idSchedule = sc.idSchedule
+                            WHERE 1 = 1 ${conditionSql}
                             ORDER BY FROM_UNIXTIME(sc.startDate) DESC
                             LIMIT ${
                                 limitEntry * page - limitEntry
@@ -287,14 +346,18 @@ const updateSchedule = async (req, res) => {
                             data.message = Strings.Common.INVALID_DATA;
                             res.status(200).send(data);
                         }
-                        // if idScheduleStatus new not is approved => only update status
+                        // if idScheduleStatus new not is approved => only update status REFUSE
                         else if (
-                            idScheduleStatus !=
-                            Constants.ScheduleStatusCode.APPROVED
+                            idScheduleStatus ==
+                            Constants.ScheduleStatusCode.REFUSE
                         ) {
                             sql = `UPDATE schedule SET updatedAt=${currentDate}, idAdmin=${idAdmin}, 
                              idScheduleStatus=${idScheduleStatus} WHERE idSchedule = ${idSchedule}`;
                             executeUpdate(sql);
+                        } else {
+                            data.status = Constants.ApiCode.BAD_REQUEST;
+                            data.message = Strings.Common.INVALID_DATA;
+                            res.status(200).send(data);
                         }
                         break;
 
@@ -344,6 +407,6 @@ const updateSchedule = async (req, res) => {
 module.exports = {
     getAdminScheduleList,
     getDriverListForSchedule,
-    getScheduleStatusList,
+    getAdminScheduleStatusListToUpdate,
     updateSchedule,
 };

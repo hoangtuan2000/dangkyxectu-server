@@ -3,9 +3,9 @@ const scheduleAdminControllers = require("../../controllers/controllersAdmin/sch
 const router = require("express").Router();
 
 router.post(
-    "/getScheduleStatusList",
+    "/getAdminScheduleStatusListToUpdate",
     authenticationControllers.getUserToken,
-    scheduleAdminControllers.getScheduleStatusList
+    scheduleAdminControllers.getAdminScheduleStatusListToUpdate
 );
 
 router.post(
