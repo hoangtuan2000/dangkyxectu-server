@@ -1,5 +1,6 @@
 const authenticationControllers = require("../../controllers/controllersGlobal/authenticationControllers");
 const scheduleAdminControllers = require("../../controllers/controllersAdmin/scheduleAdminControllers");
+const carAdminControllers = require("../../controllers/controllersAdmin/carAdminControllers");
 const router = require("express").Router();
 
 router.post(
@@ -24,6 +25,12 @@ router.post(
     "/updateSchedule",
     authenticationControllers.authenticationAdmin,
     scheduleAdminControllers.updateSchedule
+);
+
+router.post(
+    "/getCarListForAdmin",
+    authenticationControllers.authenticationAdmin,
+    carAdminControllers.getCarListForAdmin
 );
 
 module.exports = router;
