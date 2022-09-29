@@ -46,6 +46,14 @@ const helper = {
         return Array.isArray(value);
     },
 
+    isArrayEmpty: (value) => {
+        if (Array.isArray(value)) {
+            return value.length <= 0 ? true : false;
+        } else {
+            return false;
+        }
+    },
+
     isDateTimeStampGreaterThanCurrentDate: (timeStamp) => {
         return (
             new Date(new Date(timeStamp * 1000).toDateString()) >

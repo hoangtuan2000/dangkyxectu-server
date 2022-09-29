@@ -110,8 +110,8 @@ const uploadImage = async (req, res, next) => {
                     }
                 );
             } else {
-                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-                data.message = Strings.Common.ERROR_SERVER;
+                data.status = Constants.ApiCode.BAD_REQUEST;
+                data.message = Strings.Common.ERROR_NO_PICTURE;
                 res.status(200).send(data);
             }
         }

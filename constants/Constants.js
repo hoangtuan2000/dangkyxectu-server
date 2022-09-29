@@ -46,6 +46,12 @@ const Constants = {
         REFUSE: 5,
     },
 
+    CarStatusCode: {
+        WORK: 1,
+        STOP_WORKING: 2,
+        MAINTENANCE: 3,
+    },
+
     Styles: {
         COLOR_PRIMARY: "#1976d2",
         COLOR_SUCCESS: "green",

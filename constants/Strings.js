@@ -30,6 +30,7 @@ const Strings = {
         MISSING_FIELD_NAME: "Thiếu Tên Trường",
         ONLY_SUPPORT_IMAGE: "Chỉ Hỗ Trợ Tệp Hình Ảnh",
         ERROR_UPLOAD_IMAGE: "Lỗi Tải Ảnh",
+        ERROR_NO_PICTURE: "Lỗi Không Có Hình Ảnh",
     },
 };
 

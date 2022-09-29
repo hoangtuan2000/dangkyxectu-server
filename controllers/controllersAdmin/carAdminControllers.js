@@ -162,15 +162,78 @@ const getCarListForAdmin = async (req, res) => {
 };
 
 const createCar = async (req, res) => {
-    const {} = req.body;
+    const {
+        licensePlates,
+        idCarColor,
+        idCarBrand,
+        idCarType,
+        dateCarRegistrationCertificate,
+        datePeriodicInspectionCertificate,
+        dateCarInsurance,
+    } = req.body;
     let data = { ...Constants.ResultData };
-    const sql = ``
-    if(req.urlImageFirebase){
-        res.send("create car" + req.urlImageFirebase)
+    if (req.userToken) {
+        // VALIDATE DATA
+        if (
+            helper.isNullOrEmpty(licensePlates) ||
+            helper.isNullOrEmpty(idCarBrand) ||
+            helper.isNullOrEmpty(idCarColor) ||
+            helper.isNullOrEmpty(idCarType) ||
+            !helper.isArray(dateCarRegistrationCertificate) ||
+            !helper.isArray(datePeriodicInspectionCertificate) ||
+            !helper.isArray(dateCarInsurance) ||
+            helper.isArrayEmpty(dateCarRegistrationCertificate) ||
+            helper.isArrayEmpty(datePeriodicInspectionCertificate) ||
+            helper.isArrayEmpty(dateCarInsurance)
+        ) {
+            data.status = Constants.ApiCode.BAD_REQUEST;
+            data.message = Strings.Common.INVALID_DATA;
+            res.status(200).send(data);
+        } else {
+            const urlImageFirebase = req.urlImageFirebase;
+            const currentDate = helper.formatTimeStamp(new Date().getTime());
+            // INSERT CAR
+            const sqlCreateCar = `INSERT INTO 
+            car(licensePlates, image, createdAt, idCarColor, idCarBrand, idCarStatus, idCarType) VALUES (?,?,?,?,?,?,?)`;
+            db.query(
+                sqlCreateCar,
+                [
+                    licensePlates,
+                    urlImageFirebase,
+                    currentDate,
+                    idCarColor,
+                    idCarBrand,
+                    Constants.CarStatusCode.WORK,
+                    idCarType,
+                ],
+                (err, result) => {
+                    if (err) {
+                        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                        data.message = Strings.Common.ERROR;
+                        res.status(200).send(data);
+                    } else {
+                        if (result.affectedRows > 0) {
+                            // INSERT CAR LICENSE
+                            const sqlCreateCarLicense = `INSERT INTO 
+                            car_license_detail(idCar, idCarLicense, carLicenseDate, carLicenseExpirationDate, createdAt) VALUES ?`;
+                        } else {
+                            data.status =
+                                Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                            data.message = Strings.Common.ERROR;
+                            res.status(200).send(data);
+                        }
+                    }
+                }
+            );
+        }
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
     }
 };
 
 module.exports = {
     getCarListForAdmin,
-    createCar
+    createCar,
 };
