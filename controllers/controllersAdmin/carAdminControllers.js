@@ -96,7 +96,10 @@ const getCarListForAdmin = async (req, res) => {
             }
 
             // EXECUTE SQL
-            const resultExecuteQuery = await executeQuery(db, `${sqlExecuteQuery} ${conditionSql}`);
+            const resultExecuteQuery = await executeQuery(
+                db,
+                `${sqlExecuteQuery} ${conditionSql}`
+            );
 
             if (!resultExecuteQuery) {
                 data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
@@ -158,6 +161,16 @@ const getCarListForAdmin = async (req, res) => {
     }
 };
 
+const createCar = async (req, res) => {
+    const {} = req.body;
+    let data = { ...Constants.ResultData };
+    const sql = ``
+    if(req.urlImageFirebase){
+        res.send("create car" + req.urlImageFirebase)
+    }
+};
+
 module.exports = {
     getCarListForAdmin,
+    createCar
 };

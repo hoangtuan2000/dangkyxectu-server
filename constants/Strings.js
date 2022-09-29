@@ -20,6 +20,16 @@ const Strings = {
         UPDATE_SUCCESS: "Cập Nhật Thành Công",
         UPDATE_PHONE_NUMBER_SUCCESS: "Cập Nhật Số Điện Thoại Thành Công",
         CANCEL_SUCCESSFUL_REGISTRATION: "Hủy Đăng Ký Thành Công",
+        LIMIT_PART_COUNT: "Ảnh Quá Nhiều Phần",
+        LIMIT_FILE_SIZE: "Ảnh Quá Lớn",
+        LIMIT_FILE_COUNT: "Quá Nhiều Ảnh",
+        LIMIT_FIELD_KEY: "Tên Trường Quá Dài",
+        LIMIT_FIELD_VALUE: "Giá Trị Trường Quá Dài",
+        LIMIT_FIELD_COUNT: "Quá Nhiều Trường",
+        LIMIT_UNEXPECTED_FILE: "Trường Không Mong Đợi",
+        MISSING_FIELD_NAME: "Thiếu Tên Trường",
+        ONLY_SUPPORT_IMAGE: "Chỉ Hỗ Trợ Tệp Hình Ảnh",
+        ERROR_UPLOAD_IMAGE: "Lỗi Tải Ảnh",
     },
 };
 
