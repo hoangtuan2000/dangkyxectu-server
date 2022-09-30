@@ -31,6 +31,7 @@ const Strings = {
         ONLY_SUPPORT_IMAGE: "Chỉ Hỗ Trợ Tệp Hình Ảnh",
         ERROR_UPLOAD_IMAGE: "Lỗi Tải Ảnh",
         ERROR_NO_PICTURE: "Lỗi Không Có Hình Ảnh",
+        LICENSE_PLATES_EXIST: "Biển Số Xe Đã Tồn Tại",
     },
 };
 

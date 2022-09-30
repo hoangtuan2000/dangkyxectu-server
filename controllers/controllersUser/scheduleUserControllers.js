@@ -362,7 +362,7 @@ const updateSchedulePending = async (req, res) => {
         const startTimeStamp = helper.formatTimeStamp(startDate);
         const endTimeStamp = helper.formatTimeStamp(endDate);
 
-        if (helper.compareBiggerDateTimeStamp(startTimeStamp, endTimeStamp)) {
+        if (helper.isStartTimeStampLessThanOrEqualEndTimeStamp(startTimeStamp, endTimeStamp)) {
             const idUser = req.userToken.idUser;
             const email = req.userToken.email;
             const sql = `UPDATE schedule SET startDate =?, endDate =?, startLocation =?, endLocation =?, 

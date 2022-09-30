@@ -14,8 +14,7 @@ const {
     deleteObject,
 } = require("firebase/storage");
 
-const uploadImage = async (req, res, next) => {
-    const {} = req.body;
+const validateUploadImage = async (req, res, next) => {
     let data = { ...Constants.ResultData };
     uploadImageMulter(req, res, function (err) {
         if (err instanceof multer.MulterError) {
@@ -65,50 +64,7 @@ const uploadImage = async (req, res, next) => {
             res.status(200).send(data);
         } else {
             if (req.file) {
-                // UPLOAD FIREBASE STRORAGE
-                const storage = getStorage(appFirebase);
-                const storageRef = ref(
-                    storage,
-                    `images/${req.file.originalname}`
-                );
-                const metadata = {
-                    contentType: req.file.mimetype,
-                };
-                const uploadTask = uploadBytesResumable(
-                    storageRef,
-                    req.file.buffer,
-                    metadata
-                );
-                uploadTask.on(
-                    "state_changed",
-                    (snapshot) => {
-                        // const progress =
-                        //     (snapshot.bytesTransferred / snapshot.totalBytes) *
-                        //     100;
-                        // console.log("Upload is " + progress + "% done");
-                        // switch (snapshot.state) {
-                        //     case "paused":
-                        //         console.log("Upload is paused");
-                        //         break;
-                        //     case "running":
-                        //         console.log("Upload is running");
-                        //         break;
-                        // }
-                    },
-                    (error) => {
-                        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-                        data.message = Strings.Common.ERROR_UPLOAD_IMAGE;
-                        res.status(200).send(data);
-                    },
-                    () => {
-                        getDownloadURL(uploadTask.snapshot.ref).then(
-                            (downloadURL) => {
-                                req.urlImageFirebase = downloadURL;
-                                next();
-                            }
-                        );
-                    }
-                );
+                next();
             } else {
                 data.status = Constants.ApiCode.BAD_REQUEST;
                 data.message = Strings.Common.ERROR_NO_PICTURE;
@@ -118,6 +74,51 @@ const uploadImage = async (req, res, next) => {
     });
 };
 
+const uploadImageToFirebase = async (req, res, next) => {
+    let data = { ...Constants.ResultData };
+    const currentDate = Date.now()
+    const randomNumber = Math.floor(Math.random() * 10);
+    const storage = getStorage(appFirebase);
+    const storageRef = ref(storage, `images/${currentDate}_${randomNumber}_${req.file.originalname}`);
+    const metadata = {
+        contentType: req.file.mimetype,
+    };
+    const uploadTask = uploadBytesResumable(
+        storageRef,
+        req.file.buffer,
+        metadata
+    );
+    uploadTask.on(
+        "state_changed",
+        (snapshot) => {
+            // const progress =
+            //     (snapshot.bytesTransferred / snapshot.totalBytes) *
+            //     100;
+            // console.log("Upload is " + progress + "% done");
+            // switch (snapshot.state) {
+            //     case "paused":
+            //         console.log("Upload is paused");
+            //         break;
+            //     case "running":
+            //         console.log("Upload is running");
+            //         break;
+            // }
+        },
+        (error) => {
+            data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+            data.message = Strings.Common.ERROR_UPLOAD_IMAGE;
+            res.status(200).send(data);
+        },
+        () => {
+            getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                req.urlImageFirebase = downloadURL;
+                next();
+            });
+        }
+    );
+};
+
 module.exports = {
-    uploadImage,
+    validateUploadImage,
+    uploadImageToFirebase,
 };

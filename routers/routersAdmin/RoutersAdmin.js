@@ -39,8 +39,12 @@ router.post(
 router.post(
     "/createCar",
     authenticationControllers.authenticationAdmin,
-    imageAdminControllers.uploadImage,
-    carAdminControllers.createCar
+    imageAdminControllers.validateUploadImage,
+    carAdminControllers.validateDataCreateOrUpdateCar,
+    carAdminControllers.checkLicensePlatesExist,
+    imageAdminControllers.uploadImageToFirebase,
+    carAdminControllers.createCar,
+    carAdminControllers.createCarLicense,
 );
 
 module.exports = router;

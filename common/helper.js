@@ -21,11 +21,14 @@ const helper = {
         return regExp.test(phoneNumber);
     },
 
-    compareBiggerDateTimeStamp: (startDateTimeStamp, endDateTimeStamp) => {
-        return new Date(parseInt(startDateTimeStamp)) <=
-            new Date(parseInt(endDateTimeStamp))
-            ? true
-            : false;
+    isStartTimeStampLessThanOrEqualEndTimeStamp: (
+        startTimeStamp,
+        endTimeStamp
+    ) => {
+        return (
+            new Date(parseInt(startTimeStamp * 1)) <=
+            new Date(parseInt(endTimeStamp * 1))
+        );
     },
 
     formatTimeStamp: (value) => {
@@ -52,6 +55,21 @@ const helper = {
         } else {
             return false;
         }
+    },
+
+    isValidArrayLength: (value, len) => {
+        if (Array.isArray(value)) {
+            return (value.length == len ? true : false);
+        } else {
+            return false;
+        }
+    },
+
+    isStartTimeStampSmallerEndTimestamp: (startTimeStamp, endTimeStamp) => {
+        return (
+            new Date(new Date(startTimeStamp * 1).toDateString()) <
+            new Date(new Date(endTimeStamp * 1).toDateString())
+        );
     },
 
     isDateTimeStampGreaterThanCurrentDate: (timeStamp) => {

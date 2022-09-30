@@ -2,7 +2,7 @@ const multer = require("multer");
 
 const imageFilter = function (req, file, cb) {
     // Accept images only
-    if (!file.originalname.match(/\.(jpg|JPG|jpeg|JPEG|png|PNG|gif|GIF)$/)) {
+    if (!file.originalname.match(/\.(jpg|JPG|jfif|jpeg|JPEG|png|PNG|gif|GIF)$/)) {
         req.fileValidationError = "ONLY_SUPPORT_IMAGE";
         return cb(new Error("ONLY_SUPPORT_IMAGE"), false);
     }

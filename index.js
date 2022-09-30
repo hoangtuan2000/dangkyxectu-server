@@ -22,6 +22,7 @@ const PathsAdmin = require("./paths/pathsAdmin/PathsAdmin");
 const PathsUser = require("./paths/pathsUser/PathsUser");
 const PathsDriver = require("./paths/pathsDriver/PathsDriver");
 
+
 PathsGlobal.setupPaths(app);
 PathsAdmin.setupPaths(app);
 PathsUser.setupPaths(app);

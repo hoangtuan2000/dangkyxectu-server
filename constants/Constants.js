@@ -52,6 +52,12 @@ const Constants = {
         MAINTENANCE: 3,
     },
 
+    CarLicenseCode: {
+        REGISTRATION_CERTIFICATE: 1,
+        PERIODIC_INSPECTION_CERTIFICATE: 2,
+        INSURANCE: 3,
+    },
+
     Styles: {
         COLOR_PRIMARY: "#1976d2",
         COLOR_SUCCESS: "green",
