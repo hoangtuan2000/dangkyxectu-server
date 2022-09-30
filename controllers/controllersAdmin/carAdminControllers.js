@@ -132,6 +132,7 @@ const getCarListForAdmin = async (req, res) => {
                                 FROM car as ca, car_license_detail as cld 
                                 WHERE ca.idCar = cld.idCar 
                                 AND DATE(FROM_UNIXTIME(cld.carLicenseExpirationDate)) <= CURRENT_DATE()
+                                AND noExpireDate = 0
                                 GROUP BY cld.idCar) as licenseExpired ON licenseExpired.idCar = ca.idCar  
                         WHERE 1 = 1 ${conditionSql}   
                         LIMIT ${limitEntry * page - limitEntry}, ${limitEntry}`;
