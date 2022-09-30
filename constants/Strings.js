@@ -1,3 +1,5 @@
+const { Constants } = require("./Constants");
+
 const Strings = {
     Common: {
         SUCCESS: "Thành Công",
@@ -32,6 +34,7 @@ const Strings = {
         ERROR_UPLOAD_IMAGE: "Lỗi Tải Ảnh",
         ERROR_NO_PICTURE: "Lỗi Không Có Hình Ảnh",
         LICENSE_PLATES_EXIST: "Biển Số Xe Đã Tồn Tại",
+        SUPPORT_LENGTH_LICENSE_PLATES: `Biển Số Từ ${Constants.Common.CHARACTERS_MIN_LENGTH_LICENSE_PLATES} - ${Constants.Common.CHARACTERS_MAX_LENGTH_LICENSE_PLATES} Ký Tự`,
     },
 };
 

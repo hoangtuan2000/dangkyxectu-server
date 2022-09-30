@@ -207,6 +207,16 @@ const validateDataCreateOrUpdateCar = async (req, res, next) => {
         data.status = Constants.ApiCode.BAD_REQUEST;
         data.message = Strings.Common.NOT_ENOUGH_DATA;
         res.status(200).send(data);
+    } else if (
+        !helper.isValidStringBetweenMinMaxLength(
+            licensePlates,
+            Constants.Common.CHARACTERS_MIN_LENGTH_LICENSE_PLATES,
+            Constants.Common.CHARACTERS_MAX_LENGTH_LICENSE_PLATES
+        )
+    ) {
+        data.status = Constants.ApiCode.BAD_REQUEST;
+        data.message = Strings.Common.SUPPORT_LENGTH_LICENSE_PLATES;
+        res.status(200).send(data);
     }
     // CHECK NOT ARRAY OR ARRAY EMPTY
     else if (
@@ -233,7 +243,7 @@ const validateDataCreateOrUpdateCar = async (req, res, next) => {
     }
     // CHECK VALID DATE RANGE
     else if (
-        !helper.isStartTimeStampSmallerEndTimestamp(
+        !helper.isStartTimeStampLessThanOrEqualEndTimeStamp(
             dateCarRegistrationCertificate[0],
             dateCarRegistrationCertificate[1]
         ) ||
@@ -260,7 +270,7 @@ const createCar = async (req, res, next) => {
     if (req.userToken) {
         const urlImageFirebase = req.urlImageFirebase;
         const currentDate = helper.formatTimeStamp(new Date().getTime());
-        const idCarStatus = Constants.CarStatusCode.WORK
+        const idCarStatus = Constants.CarStatusCode.WORK;
         // INSERT CAR
         const sqlCreateCar = `INSERT INTO
                         car(licensePlates, image, createdAt, idCarColor, idCarBrand, idCarStatus, idCarType) VALUES (?,?,?,?,?,?,?)`;
@@ -331,6 +341,12 @@ const createCarLicense = async (req, res, next) => {
 
     const idCarJustCreate = req.idCarJustCreate;
     const currentDate = helper.formatTimeStamp(new Date().getTime());
+    const noExpireDate = helper.isTwoEqualDateTimestamp(
+        dateCarRegistrationCertificate[0],
+        dateCarRegistrationCertificate[1]
+    )
+        ? 1
+        : 0;
     // FORMAT DATA
     let arrayData = [
         [
@@ -338,6 +354,7 @@ const createCarLicense = async (req, res, next) => {
             Constants.CarLicenseCode.REGISTRATION_CERTIFICATE,
             helper.formatTimeStamp(dateCarRegistrationCertificate[0]),
             helper.formatTimeStamp(dateCarRegistrationCertificate[1]),
+            noExpireDate,
             currentDate,
         ],
         [
@@ -345,6 +362,7 @@ const createCarLicense = async (req, res, next) => {
             Constants.CarLicenseCode.PERIODIC_INSPECTION_CERTIFICATE,
             helper.formatTimeStamp(datePeriodicInspectionCertificate[0]),
             helper.formatTimeStamp(datePeriodicInspectionCertificate[1]),
+            0,
             currentDate,
         ],
         [
@@ -352,6 +370,7 @@ const createCarLicense = async (req, res, next) => {
             Constants.CarLicenseCode.INSURANCE,
             helper.formatTimeStamp(dateCarInsurance[0]),
             helper.formatTimeStamp(dateCarInsurance[1]),
+            0,
             currentDate,
         ],
     ];
@@ -359,7 +378,7 @@ const createCarLicense = async (req, res, next) => {
     console.log(arrayData);
 
     // INSERT CAR LICENSE
-    const sqlCreateCarLicense = `INSERT INTO car_license_detail(idCar, idCarLicense, carLicenseDate, carLicenseExpirationDate, createdAt) VALUES ? `;
+    const sqlCreateCarLicense = `INSERT INTO car_license_detail(idCar, idCarLicense, carLicenseDate, carLicenseExpirationDate, noExpireDate, createdAt) VALUES ? `;
     db.beginTransaction(function (err) {
         if (err) {
             data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;

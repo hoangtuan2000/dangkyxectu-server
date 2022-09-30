@@ -28,6 +28,8 @@ const Constants = {
     Common: {
         PAGE: 1,
         LIMIT_ENTRY: 10,
+        CHARACTERS_MIN_LENGTH_LICENSE_PLATES: 7,
+        CHARACTERS_MAX_LENGTH_LICENSE_PLATES: 10,
     },
 
     ScheduleStatus: {

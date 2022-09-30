@@ -16,6 +16,19 @@ const helper = {
         }
     },
 
+    isValidStringBetweenMinMaxLength: (value, minLen, maxLen) => {
+        if ((typeof value == "string" || typeof value == "number") && minLen && maxLen) {
+            value = value.toString();
+            if (value.length >= minLen && value.length <= maxLen) {
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    },
+
     isValidPhoneNumber: (phoneNumber) => {
         const regExp = new RegExp(/^([0]{1})([1-9]{1})([0-9]{8})$/);
         return regExp.test(phoneNumber);
@@ -26,8 +39,15 @@ const helper = {
         endTimeStamp
     ) => {
         return (
-            new Date(parseInt(startTimeStamp * 1)) <=
-            new Date(parseInt(endTimeStamp * 1))
+            new Date(parseInt(startTimeStamp)) <=
+            new Date(parseInt(endTimeStamp))
+        );
+    },
+
+    isTwoEqualDateTimestamp: (startTimeStamp, endTimeStamp) => {
+        return (
+            new Date(parseInt(startTimeStamp)).toDateString() ==
+            new Date(parseInt(endTimeStamp)).toDateString()
         );
     },
 
@@ -59,7 +79,7 @@ const helper = {
 
     isValidArrayLength: (value, len) => {
         if (Array.isArray(value)) {
-            return (value.length == len ? true : false);
+            return value.length == len ? true : false;
         } else {
             return false;
         }
