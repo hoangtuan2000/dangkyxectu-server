@@ -60,6 +60,11 @@ const Constants = {
         INSURANCE: 3,
     },
 
+    LicenseCode: {
+        EXPIRES: 1,
+        NOT_EXPIRES: 0,
+    },
+
     Styles: {
         COLOR_PRIMARY: "#1976d2",
         COLOR_SUCCESS: "green",

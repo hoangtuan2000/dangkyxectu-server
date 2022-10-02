@@ -13,6 +13,9 @@ const getCarListForAdmin = async (req, res) => {
         carBrand,
         licensePlates,
         carCode,
+        licenseExpires,
+        haveTrip,
+        haveMaintenance,
     } = req.body;
     page = parseInt(page) || Constants.Common.PAGE;
     limitEntry = parseInt(limitEntry) || Constants.Common.LIMIT_ENTRY;
@@ -34,6 +37,22 @@ const getCarListForAdmin = async (req, res) => {
                                     LEFT JOIN car_type as ct ON ct.idCarType = ca.idCarType
                                     LEFT JOIN car_status as cs ON cs.idCarStatus = ca.idCarStatus
                                     LEFT JOIN car_brand as cb ON cb.idCarBrand = ca.idCarBrand
+                                    LEFT JOIN 
+                                        (SELECT COUNT(schedule.idCar) as numberOfTrips, car.idCar
+                                        FROM car, schedule 
+                                        WHERE car.idCar = schedule.idCar
+                                        GROUP BY schedule.idCar) as trip ON trip.idCar = ca.idCar
+                                    LEFT JOIN 
+                                        (SELECT COUNT(idCar) as numberOfMaintenance, idCar
+                                        FROM car_breakdown
+                                        GROUP BY idCar) as maintenance ON maintenance.idCar = ca.idCar
+                                    LEFT JOIN
+                                        (SELECT COUNT(cld.idCar) as licenseNumberExpired, cld.idCar
+                                        FROM car as ca, car_license_detail as cld 
+                                        WHERE ca.idCar = cld.idCar 
+                                        AND DATE(FROM_UNIXTIME(cld.carLicenseExpirationDate)) <= CURRENT_DATE()
+                                        AND noExpireDate = 0
+                                        GROUP BY cld.idCar) as licenseExpired ON licenseExpired.idCar = ca.idCar
                                     WHERE 1 = 1 `;
             // CHECK CONDITION SQL
             let conditionSql = "";
@@ -88,6 +107,26 @@ const getCarListForAdmin = async (req, res) => {
                 }
                 conditionSql += sqlTemp;
             }
+            if (!helper.isNullOrEmpty(licenseExpires)) {
+                // license expired
+                if (licenseExpires === true)
+                    conditionSql += ` AND (licenseExpired.licenseNumberExpired IS NOT NULL) `;
+                // license not expired
+                else if (licenseExpires === false)
+                    conditionSql += ` AND (licenseExpired.licenseNumberExpired IS NULL) `;
+            }
+            if (!helper.isNullOrEmpty(haveTrip)) {
+                if (haveTrip === true)
+                    conditionSql += ` AND (trip.numberOfTrips IS NOT NULL) `;
+                else if (haveTrip === false)
+                    conditionSql += ` AND (trip.numberOfTrips IS NULL) `;
+            }
+            if (!helper.isNullOrEmpty(haveMaintenance)) {
+                if (haveMaintenance === true)
+                    conditionSql += ` AND (maintenance.numberOfMaintenance IS NOT NULL) `;
+                else if (haveMaintenance === false)
+                    conditionSql += ` AND (maintenance.numberOfMaintenance IS NULL) `;
+            }
             if (!helper.isNullOrEmpty(carCode)) {
                 conditionSql += ` AND (ca.idCar = '${carCode}') `;
             }
@@ -107,35 +146,37 @@ const getCarListForAdmin = async (req, res) => {
                 res.status(200).send(data);
             } else {
                 const sql = `SELECT 
-                            ca.idCar, ca.licensePlates, ca.image,
-                            IFNULL(carSchedule.numberOfTrips, 0) as numberOfTrips,
-                            IFNULL(licenseExpired.licenseNumberExpired , 0) as licenseNumberExpired,
-                            cbd.numberOfFailures,
-                            cb.idCarBrand, cb.name as nameCarBrand,
-                            ct.idCarType, ct.name as nameCarType, ct.seatNumber,
-                            cs.idCarStatus, cs.name as nameCarStatus
-                        FROM car as ca
-                        LEFT JOIN car_brand as cb ON cb.idCarBrand = ca.idCarBrand
-                        LEFT JOIN car_type as ct ON ct.idCarType = ca.idCarType
-                        LEFT JOIN car_status as cs ON cs.idCarStatus = ca.idCarStatus
-                        LEFT JOIN 
-                            (SELECT COUNT(schedule.idCar) as numberOfTrips, car.idCar
-                                FROM car, schedule 
-                                WHERE car.idCar = schedule.idCar
-                                GROUP BY schedule.idCar) as carSchedule ON carSchedule.idCar = ca.idCar
-                        LEFT JOIN 
-                            (SELECT COUNT(idCar) as numberOfFailures, idCar
-                                FROM car_breakdown
-                                GROUP BY idCar) as cbd ON cbd.idCar = ca.idCar
-                        LEFT JOIN
-                            (SELECT COUNT(cld.idCar) as licenseNumberExpired, cld.idCar
-                                FROM car as ca, car_license_detail as cld 
-                                WHERE ca.idCar = cld.idCar 
-                                AND DATE(FROM_UNIXTIME(cld.carLicenseExpirationDate)) <= CURRENT_DATE()
-                                AND noExpireDate = 0
-                                GROUP BY cld.idCar) as licenseExpired ON licenseExpired.idCar = ca.idCar  
-                        WHERE 1 = 1 ${conditionSql}   
-                        LIMIT ${limitEntry * page - limitEntry}, ${limitEntry}`;
+                                ca.idCar, ca.licensePlates, ca.image,
+                                IFNULL(trip.numberOfTrips, 0) as numberOfTrips,
+                                IFNULL(licenseExpired.licenseNumberExpired , 0) as licenseNumberExpired,
+                                maintenance.numberOfMaintenance,
+                                cb.idCarBrand, cb.name as nameCarBrand,
+                                ct.idCarType, ct.name as nameCarType, ct.seatNumber,
+                                cs.idCarStatus, cs.name as nameCarStatus
+                            FROM car as ca
+                            LEFT JOIN car_brand as cb ON cb.idCarBrand = ca.idCarBrand
+                            LEFT JOIN car_type as ct ON ct.idCarType = ca.idCarType
+                            LEFT JOIN car_status as cs ON cs.idCarStatus = ca.idCarStatus
+                            LEFT JOIN 
+                                (SELECT COUNT(schedule.idCar) as numberOfTrips, car.idCar
+                                    FROM car, schedule 
+                                    WHERE car.idCar = schedule.idCar
+                                    GROUP BY schedule.idCar) as trip ON trip.idCar = ca.idCar
+                            LEFT JOIN 
+                                (SELECT COUNT(idCar) as numberOfMaintenance, idCar
+                                    FROM car_breakdown
+                                    GROUP BY idCar) as maintenance ON maintenance.idCar = ca.idCar
+                            LEFT JOIN
+                                (SELECT COUNT(cld.idCar) as licenseNumberExpired, cld.idCar
+                                    FROM car as ca, car_license_detail as cld 
+                                    WHERE ca.idCar = cld.idCar 
+                                    AND DATE(FROM_UNIXTIME(cld.carLicenseExpirationDate)) <= CURRENT_DATE()
+                                    AND noExpireDate = 0
+                                    GROUP BY cld.idCar) as licenseExpired ON licenseExpired.idCar = ca.idCar
+                            WHERE 1 = 1 ${conditionSql}   
+                            LIMIT ${
+                                limitEntry * page - limitEntry
+                            }, ${limitEntry}`;
                 db.query(sql, (err, result) => {
                     if (err) {
                         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
