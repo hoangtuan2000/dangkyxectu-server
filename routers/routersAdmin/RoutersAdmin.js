@@ -37,14 +37,39 @@ router.post(
 );
 
 router.post(
+    "/getCarLicense",
+    authenticationControllers.authenticationAdmin,
+    carAdminControllers.getCarLicense
+);
+
+router.post(
+    "/getCarToUpdate",
+    authenticationControllers.authenticationAdmin,
+    carAdminControllers.getCarToUpdate
+);
+
+router.post(
     "/createCar",
     authenticationControllers.authenticationAdmin,
-    imageAdminControllers.validateUploadImage,
-    carAdminControllers.validateDataCreateOrUpdateCar,
+    imageAdminControllers.validateUploadImageWhenCreateCar,
+    carAdminControllers.validateDataCreateCar,
     carAdminControllers.checkLicensePlatesExist,
     imageAdminControllers.uploadImageToFirebase,
     carAdminControllers.createCar,
-    carAdminControllers.createCarLicense,
+    carAdminControllers.createCarLicense
+);
+
+router.post(
+    "/updateCar",
+    authenticationControllers.authenticationAdmin,
+    imageAdminControllers.validateUploadImageWhenUpdateCar,
+    carAdminControllers.validateDataUpdateCar,
+    carAdminControllers.checkLicensePlatesExist,
+    carAdminControllers.getImageCar,
+    // imageAdminControllers.uploadImageToFirebase,
+    carAdminControllers.updateCar,
+    // carAdminControllers.createCarLicense
+    // imageAdminControllers.deteleImageFromFirebase,
 );
 
 module.exports = router;

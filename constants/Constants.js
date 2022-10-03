@@ -60,6 +60,12 @@ const Constants = {
         INSURANCE: 3,
     },
 
+    CarLicense: {
+        REGISTRATION_CERTIFICATE: "registrationCertificate",
+        PERIODIC_INSPECTION_CERTIFICATE: "periodicInspectionCertificate",
+        INSURANCE: "insurance",
+    },
+
     LicenseCode: {
         EXPIRES: 1,
         NOT_EXPIRES: 0,

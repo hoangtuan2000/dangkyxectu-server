@@ -202,29 +202,141 @@ const getCarListForAdmin = async (req, res) => {
     }
 };
 
-const checkLicensePlatesExist = async (req, res, next) => {
-    const { licensePlates } = req.body;
+const getCarToUpdate = async (req, res) => {
+    const { idCar } = req.body;
     let data = { ...Constants.ResultData };
-    const sql = `SELECT * FROM car WHERE licensePlates = ?`;
-    db.query(sql, licensePlates, (err, result) => {
-        if (err) {
-            data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-            data.message = Strings.Common.ERROR;
-            res.status(200).send(data);
-        } else {
-            // LICENSE PLATES EXIST
-            if (result.length > 0) {
-                data.status = Constants.ApiCode.BAD_REQUEST;
-                data.message = Strings.Common.LICENSE_PLATES_EXIST;
+
+    if (req.userToken) {
+        const sql = `SELECT 
+                        ca.idCar, ca.image, ca.licensePlates, ca.createdAt, ca.updatedAt,
+                        ad.idUser as idAdmin, ad.fullName as fullNameAdmin, ad.code as codeAdmin, ad.email as emailAdmin, ad.phone as phoneAdmin,
+                        ct.idCarType, ct.name as nameCarType, ct.seatNumber,
+                        cs.idCarStatus, cs.name as nameCarStatus,
+                        cb.idCarBrand, cb.name as nameCarBrand,
+                        cc.idCarColor, cc.name as nameCarColor
+                    FROM car as ca
+                    LEFT JOIN user as ad ON ad.idUser = ca.idAdmin
+                    LEFT JOIN car_type as ct ON ct.idCarType = ca.idCarType
+                    LEFT JOIN car_status as cs ON cs.idCarStatus = ca.idCarStatus
+                    LEFT JOIN car_brand as cb ON cb.idCarBrand = ca.idCarBrand
+                    LEFT JOIN car_color as cc ON cc.idCarColor = ca.idCarColor
+                    WHERE ca.idCar = ?`;
+        db.query(sql, idCar, (err, result) => {
+            if (err) {
+                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                data.message = Strings.Common.ERROR;
                 res.status(200).send(data);
             } else {
-                next();
+                if (result.length > 0) {
+                    data.status = Constants.ApiCode.OK;
+                    data.message = Strings.Common.SUCCESS;
+                    data.data = [...result];
+                    res.status(200).send(data);
+                } else {
+                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                    data.message = Strings.Common.ERROR;
+                    res.status(200).send(data);
+                }
             }
-        }
-    });
+        });
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
 };
 
-const validateDataCreateOrUpdateCar = async (req, res, next) => {
+const getCarLicense = async (req, res) => {
+    const { group, idCar } = req.body;
+
+    let data = { ...Constants.ResultData };
+
+    if (group) {
+        const arrNameCarLicense = group.split(",") || group;
+
+        for (let i = 0; i < arrNameCarLicense.length; i++) {
+            const nameCarLicense = arrNameCarLicense[i].replace(
+                /\s+|\s+/gm,
+                ""
+            ); //remove space
+            let idCarLicense = null;
+            switch (nameCarLicense) {
+                case Constants.CarLicense.REGISTRATION_CERTIFICATE:
+                    idCarLicense =
+                        Constants.CarLicenseCode.REGISTRATION_CERTIFICATE;
+                    break;
+                case Constants.CarLicense.PERIODIC_INSPECTION_CERTIFICATE:
+                    idCarLicense =
+                        Constants.CarLicenseCode
+                            .PERIODIC_INSPECTION_CERTIFICATE;
+                    break;
+                case Constants.CarLicense.INSURANCE:
+                    idCarLicense = Constants.CarLicenseCode.INSURANCE;
+                    break;
+            }
+            const result = await executeQuery(
+                db,
+                `SELECT * FROM car_license_detail WHERE idCar = ${idCar} AND idCarLicense = ${idCarLicense}`
+            );
+            if (!result) {
+                data.status = Constants.ApiCode.BAD_REQUEST;
+                data.message = Strings.Common.ERROR_GET_DATA;
+                data.data = [];
+                break;
+            } else {
+                if (result.length > 0) {
+                    const tempObject = {};
+                    tempObject[`${nameCarLicense}`] = [...result];
+                    data.data = { ...data.data, ...tempObject };
+                    data.status = Constants.ApiCode.OK;
+                    data.message = Strings.Common.SUCCESS;
+                } else {
+                    data.status = Constants.ApiCode.BAD_REQUEST;
+                    data.message = Strings.Common.ERROR_GET_DATA;
+                    data.data = [];
+                    break;
+                }
+            }
+        }
+        res.status(200).send(data);
+    } else {
+        data.status = Constants.ApiCode.BAD_REQUEST;
+        data.message = Strings.Common.NOT_ENOUGH_DATA;
+        res.status(200).send(data);
+    }
+};
+
+const checkLicensePlatesExist = async (req, res, next) => {
+    const { licensePlates, idCar } = req.body;
+    if (licensePlates) {
+        let data = { ...Constants.ResultData };
+        let sql = `SELECT * FROM car WHERE licensePlates = ?`;
+        if (idCar) {
+            sql = `SELECT * FROM car WHERE licensePlates = ? AND idCar != ${idCar}`;
+        }
+        db.query(sql, licensePlates, (err, result) => {
+            if (err) {
+                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                data.message = Strings.Common.ERROR;
+                res.status(200).send(data);
+            } else {
+                // LICENSE PLATES EXIST
+                if (result.length > 0) {
+                    data.status = Constants.ApiCode.BAD_REQUEST;
+                    data.message = Strings.Common.LICENSE_PLATES_EXIST;
+                    res.status(200).send(data);
+                } else {
+                    next();
+                }
+            }
+        });
+    } else {
+        next();
+    }
+};
+
+// CREATE CAR
+const validateDataCreateCar = async (req, res, next) => {
     const {
         licensePlates,
         idCarColor,
@@ -310,62 +422,68 @@ const createCar = async (req, res, next) => {
     const { licensePlates, idCarColor, idCarBrand, idCarType } = req.body;
     let data = { ...Constants.ResultData };
     if (req.userToken) {
-        const urlImageFirebase = req.urlImageFirebase;
-        const currentDate = helper.formatTimeStamp(new Date().getTime());
-        const idCarStatus = Constants.CarStatusCode.WORK;
-        // INSERT CAR
-        const sqlCreateCar = `INSERT INTO
-                        car(licensePlates, image, createdAt, idCarColor, idCarBrand, idCarStatus, idCarType) VALUES (?,?,?,?,?,?,?)`;
-        db.beginTransaction(function (err) {
-            if (err) {
-                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-                data.message = Strings.Common.ERROR;
-                res.status(200).send(data);
-            }
-            db.query(
-                sqlCreateCar,
-                [
-                    licensePlates,
-                    urlImageFirebase,
-                    currentDate,
-                    idCarColor,
-                    idCarBrand,
-                    idCarStatus,
-                    idCarType,
-                ],
-                function (error, results, fields) {
-                    if (error) {
-                        return db.rollback(function () {
-                            data.status =
-                                Constants.ApiCode.INTERNAL_SERVER_ERROR;
-                            data.message = Strings.Common.ERROR;
-                            res.status(200).send(data);
-                        });
-                    } else {
-                        if (results.affectedRows > 0) {
-                            db.commit(function (err) {
-                                if (err) {
-                                    return db.rollback(function () {
-                                        data.status =
-                                            Constants.ApiCode.INTERNAL_SERVER_ERROR;
-                                        data.message = Strings.Common.ERROR;
-                                        res.status(200).send(data);
-                                    });
-                                } else {
-                                    req.idCarJustCreate = results.insertId;
-                                    next();
-                                }
+        if (req.urlImageFirebase) {
+            const urlImageFirebase = req.urlImageFirebase;
+            const currentDate = helper.formatTimeStamp(new Date().getTime());
+            const idCarStatus = Constants.CarStatusCode.WORK;
+            // INSERT CAR
+            const sqlCreateCar = `INSERT INTO
+                            car(licensePlates, image, createdAt, idCarColor, idCarBrand, idCarStatus, idCarType) VALUES (?,?,?,?,?,?,?)`;
+            db.beginTransaction(function (err) {
+                if (err) {
+                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                    data.message = Strings.Common.ERROR;
+                    res.status(200).send(data);
+                }
+                db.query(
+                    sqlCreateCar,
+                    [
+                        licensePlates,
+                        urlImageFirebase,
+                        currentDate,
+                        idCarColor,
+                        idCarBrand,
+                        idCarStatus,
+                        idCarType,
+                    ],
+                    function (error, results, fields) {
+                        if (error) {
+                            return db.rollback(function () {
+                                data.status =
+                                    Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                                data.message = Strings.Common.ERROR;
+                                res.status(200).send(data);
                             });
                         } else {
-                            data.status =
-                                Constants.ApiCode.INTERNAL_SERVER_ERROR;
-                            data.message = Strings.Common.ERROR;
-                            res.status(200).send(data);
+                            if (results.affectedRows > 0) {
+                                db.commit(function (err) {
+                                    if (err) {
+                                        return db.rollback(function () {
+                                            data.status =
+                                                Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                                            data.message = Strings.Common.ERROR;
+                                            res.status(200).send(data);
+                                        });
+                                    } else {
+                                        req.idCarJustCreate = results.insertId;
+                                        next();
+                                    }
+                                });
+                            } else {
+                                data.status =
+                                    Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                                data.message = Strings.Common.ERROR;
+                                res.status(200).send(data);
+                            }
                         }
                     }
-                }
-            );
-        });
+                );
+            });
+        } else {
+            data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+            data.message = Strings.Common.ERROR_SERVER;
+            res.status(200).send(data);
+        }
     } else {
         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
         data.message = Strings.Common.USER_NOT_EXIST;
@@ -417,8 +535,6 @@ const createCarLicense = async (req, res, next) => {
         ],
     ];
 
-    console.log(arrayData);
-
     // INSERT CAR LICENSE
     const sqlCreateCarLicense = `INSERT INTO car_license_detail(idCar, idCarLicense, carLicenseDate, carLicenseExpirationDate, noExpireDate, createdAt) VALUES ? `;
     db.beginTransaction(function (err) {
@@ -464,10 +580,172 @@ const createCarLicense = async (req, res, next) => {
     });
 };
 
+// UPDATE CAR
+const validateDataUpdateCar = async (req, res, next) => {
+    const {
+        licensePlates,
+        idCarColor,
+        idCarBrand,
+        idCarType,
+        idCarStatus,
+        dateCarRegistrationCertificate,
+        datePeriodicInspectionCertificate,
+        dateCarInsurance,
+    } = req.body;
+    let data = { ...Constants.ResultData };
+    console.log(licensePlates);
+    if (
+        !licensePlates &&
+        !idCarColor &&
+        !idCarBrand &&
+        !idCarType &&
+        !idCarStatus &&
+        !dateCarRegistrationCertificate &&
+        !datePeriodicInspectionCertificate &&
+        !dateCarInsurance
+    ) {
+        data.status = Constants.ApiCode.BAD_REQUEST;
+        data.message = Strings.Common.DATA_IS_UNCHANGED;
+        res.status(200).send(data);
+    } else if (
+        !helper.isNullOrEmpty(licensePlates) &&
+        !helper.isValidStringBetweenMinMaxLength(
+            licensePlates,
+            Constants.Common.CHARACTERS_MIN_LENGTH_LICENSE_PLATES,
+            Constants.Common.CHARACTERS_MAX_LENGTH_LICENSE_PLATES
+        )
+    ) {
+        data.status = Constants.ApiCode.BAD_REQUEST;
+        data.message = Strings.Common.SUPPORT_LENGTH_LICENSE_PLATES;
+        res.status(200).send(data);
+    }
+    // CHECK NOT ARRAY OR ARRAY EMPTY
+    else if (
+        (!helper.isNullOrEmpty(dateCarRegistrationCertificate) &&
+            (helper.isArrayEmpty(dateCarRegistrationCertificate) ||
+                !helper.isArray(dateCarRegistrationCertificate))) ||
+        (!helper.isNullOrEmpty(datePeriodicInspectionCertificate) &&
+            (helper.isArrayEmpty(datePeriodicInspectionCertificate) ||
+                !helper.isArray(datePeriodicInspectionCertificate))) ||
+        (!helper.isNullOrEmpty(dateCarInsurance) &&
+            (helper.isArrayEmpty(dateCarInsurance) ||
+                !helper.isArray(dateCarInsurance)))
+    ) {
+        data.status = Constants.ApiCode.BAD_REQUEST;
+        data.message = Strings.Common.INVALID_DATA;
+        res.status(200).send(data);
+    }
+    // CHECK LENGTH OF ARRAY DATE
+    else if (
+        (!helper.isNullOrEmpty(dateCarRegistrationCertificate) &&
+            !helper.isValidArrayLength(dateCarRegistrationCertificate, 2)) ||
+        (!helper.isNullOrEmpty(datePeriodicInspectionCertificate) &&
+            !helper.isValidArrayLength(datePeriodicInspectionCertificate, 2)) ||
+        (!helper.isNullOrEmpty(dateCarInsurance) &&
+            !helper.isValidArrayLength(dateCarInsurance, 2))
+    ) {
+        data.status = Constants.ApiCode.BAD_REQUEST;
+        data.message = Strings.Common.INVALID_DATA;
+        res.status(200).send(data);
+    }
+    // CHECK VALID DATE RANGE
+    else if (
+        (!helper.isNullOrEmpty(dateCarRegistrationCertificate) &&
+            !helper.isStartTimeStampLessThanOrEqualEndTimeStamp(
+                dateCarRegistrationCertificate[0],
+                dateCarRegistrationCertificate[1]
+            )) ||
+        (!helper.isNullOrEmpty(datePeriodicInspectionCertificate) &&
+            !helper.isStartTimeStampSmallerEndTimestamp(
+                datePeriodicInspectionCertificate[0],
+                datePeriodicInspectionCertificate[1]
+            )) ||
+        (!helper.isNullOrEmpty(dateCarInsurance) &&
+            !helper.isStartTimeStampSmallerEndTimestamp(
+                dateCarInsurance[0],
+                dateCarInsurance[1]
+            ))
+    ) {
+        data.status = Constants.ApiCode.BAD_REQUEST;
+        data.message = Strings.Common.INVALID_DATE;
+        res.status(200).send(data);
+    } else {
+        next();
+    }
+};
+
+const getImageCar = async (req, res, next) => {
+    const { idCar } = req.body;
+    const sql = `SELECT image FROM car WHERE idCar = ?`;
+    db.query(sql, idCar, (err, result) => {
+        if (err) {
+            data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+            data.message = Strings.Common.ERROR_GET_DATA;
+            res.status(200).send(data);
+        } else {
+            req.deleteImage = result.length > 0 && result[0].image;
+            next();
+        }
+    });
+};
+
+const updateCar = async (req, res, next) => {
+    const {
+        idCar,
+        licensePlates,
+        idCarColor,
+        idCarBrand,
+        idCarType,
+        idCarStatus,
+    } = req.body;
+    let data = { ...Constants.ResultData };
+    if (req.userToken) {
+        const urlImageFirebase = req.urlImageFirebase;
+        const currentDate = helper.formatTimeStamp(new Date().getTime());
+        // UPDATE CAR
+        let sql = null;
+        let sqlData = "";
+        if (urlImageFirebase) {
+            sqlData += ` image = '${urlImageFirebase}',`;
+        }
+        if (licensePlates) {
+            sqlData += ` licensePlates = '${licensePlates}',`;
+        }
+        if (idCarColor) {
+            sqlData += ` idCarColor = ${idCarColor},`;
+        }
+        if (idCarBrand) {
+            sqlData += ` idCarBrand = ${idCarBrand},`;
+        }
+        if (idCarType) {
+            sqlData += ` idCarType = ${idCarType},`;
+        }
+        if (idCarStatus) {
+            sqlData += ` idCarStatus = ${idCarStatus},`;
+        }
+
+        if (sqlData) {
+            sqlData = sqlData.substring(0, sqlData.length - 1); // remove ',' last string sqlData
+            sql = `UPDATE car SET ${sqlData} WHERE idCar = ${idCar}`;
+        }
+
+        res.status(200).send(sql);
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
+
 module.exports = {
     getCarListForAdmin,
-    validateDataCreateOrUpdateCar,
+    getCarToUpdate,
+    validateDataCreateCar,
     checkLicensePlatesExist,
     createCar,
     createCarLicense,
+    getCarLicense,
+    validateDataUpdateCar,
+    updateCar,
+    getImageCar,
 };
