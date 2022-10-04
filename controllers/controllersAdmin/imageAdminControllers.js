@@ -114,18 +114,18 @@ const uploadImageToFirebase = async (req, res, next) => {
 };
 
 const deteleImageFromFirebase = async (req, res, next) => {
-        let deleteImage = req.deleteImage
+    let deleteImage = req.deleteImage;
+    if (req.urlImageFirebase) {
         const storage = getStorage(appFirebase);
         const desertRef = ref(storage, deleteImage);
         deleteObject(desertRef)
             .then(() => {
-                console.log('dateleImageFromFirebase success');
-                next()
+                console.log("dateleImageFromFirebase success");
             })
             .catch((error) => {
-                console.log('dateleImageFromFirebase err');
-                next()
+                console.log("dateleImageFromFirebase err");
             });
+    }
 };
 
 const validateUploadImageWhenUpdateCar = async (req, res, next) => {

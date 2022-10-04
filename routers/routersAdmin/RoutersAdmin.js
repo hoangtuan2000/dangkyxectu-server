@@ -66,10 +66,10 @@ router.post(
     carAdminControllers.validateDataUpdateCar,
     carAdminControllers.checkLicensePlatesExist,
     carAdminControllers.getImageCar,
-    // imageAdminControllers.uploadImageToFirebase,
+    imageAdminControllers.uploadImageToFirebase,
     carAdminControllers.updateCar,
-    // carAdminControllers.createCarLicense
-    // imageAdminControllers.deteleImageFromFirebase,
+    carAdminControllers.updateCarLicense,
+    imageAdminControllers.deteleImageFromFirebase,
 );
 
 module.exports = router;

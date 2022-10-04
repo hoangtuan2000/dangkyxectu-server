@@ -593,7 +593,7 @@ const validateDataUpdateCar = async (req, res, next) => {
         dateCarInsurance,
     } = req.body;
     let data = { ...Constants.ResultData };
-    console.log(licensePlates);
+
     if (
         !licensePlates &&
         !idCarColor &&
@@ -725,15 +725,152 @@ const updateCar = async (req, res, next) => {
         }
 
         if (sqlData) {
-            sqlData = sqlData.substring(0, sqlData.length - 1); // remove ',' last string sqlData
-            sql = `UPDATE car SET ${sqlData} WHERE idCar = ${idCar}`;
+            sql = `UPDATE car SET ${sqlData} updatedAt = ${currentDate} WHERE idCar = ${idCar}`;
         }
 
-        res.status(200).send(sql);
+        if (sql) {
+            db.query(sql, (err, result) => {
+                if (err) {
+                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                    data.message = Strings.Common.ERROR_SERVER;
+                    res.status(200).send(data);
+                } else {
+                    if (result.changedRows > 0) {
+                        next();
+                    } else {
+                        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                        data.message = Strings.Common.ERROR_SERVER;
+                        res.status(200).send(data);
+                    }
+                }
+            });
+        } else {
+            next();
+        }
     } else {
         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
         data.message = Strings.Common.USER_NOT_EXIST;
         res.status(200).send(data);
+    }
+};
+
+const updateCarLicense = async (req, res, next) => {
+    const {
+        idCar,
+        dateCarRegistrationCertificate,
+        datePeriodicInspectionCertificate,
+        dateCarInsurance,
+    } = req.body;
+    let data = { ...Constants.ResultData };
+
+    const currentDate = helper.formatTimeStamp(new Date().getTime());
+
+    let sqlUpdate = "";
+    let conditionSql = "";
+    // FORMAT SQL
+    if (
+        dateCarRegistrationCertificate ||
+        datePeriodicInspectionCertificate ||
+        dateCarInsurance
+    ) {
+        let carLicenseDate = "";
+        let carLicenseExpirationDate = "";
+
+        // dateCarRegistrationCertificate
+        dateCarRegistrationCertificate &&
+            (carLicenseDate += ` when idCarLicense = ${
+                Constants.CarLicenseCode.REGISTRATION_CERTIFICATE
+            } 
+            then ${dateCarRegistrationCertificate[0] / 1000}  `) &&
+            (carLicenseExpirationDate += ` when idCarLicense = ${
+                Constants.CarLicenseCode.REGISTRATION_CERTIFICATE
+            } 
+            then ${dateCarRegistrationCertificate[1] / 1000}  `) &&
+            (conditionSql += `${Constants.CarLicenseCode.REGISTRATION_CERTIFICATE}, `);
+
+        // datePeriodicInspectionCertificate
+        datePeriodicInspectionCertificate &&
+            (carLicenseDate += ` when idCarLicense = ${
+                Constants.CarLicenseCode.PERIODIC_INSPECTION_CERTIFICATE
+            } 
+            then ${datePeriodicInspectionCertificate[0] / 1000} `) &&
+            (carLicenseExpirationDate += ` when idCarLicense = ${
+                Constants.CarLicenseCode.PERIODIC_INSPECTION_CERTIFICATE
+            } 
+            then ${datePeriodicInspectionCertificate[1] / 1000}  `) &&
+            (conditionSql += `${Constants.CarLicenseCode.PERIODIC_INSPECTION_CERTIFICATE}, `);
+
+        // dateCarInsurance
+        dateCarInsurance &&
+            (carLicenseDate += ` when idCarLicense = ${
+                Constants.CarLicenseCode.INSURANCE
+            } 
+            then ${dateCarInsurance[0] / 1000} `) &&
+            (carLicenseExpirationDate += ` when idCarLicense = ${
+                Constants.CarLicenseCode.INSURANCE
+            } 
+            then ${dateCarInsurance[1] / 1000} `) &&
+            (conditionSql += `${Constants.CarLicenseCode.INSURANCE}, `);
+
+        sqlUpdate += `carLicenseDate = (case 
+                                ${carLicenseDate}
+                            end),
+                        carLicenseExpirationDate = (case 
+                            ${carLicenseExpirationDate}
+                            end),
+                        updatedAt = ${currentDate},
+                        `;
+    }
+
+    // FORMAT SQL
+    let noExpireDate = null;
+    if (dateCarRegistrationCertificate) {
+        noExpireDate = helper.isTwoEqualDateTimestamp(
+            dateCarRegistrationCertificate[0],
+            dateCarRegistrationCertificate[1]
+        )
+            ? 1
+            : 0;
+        sqlUpdate += ` noExpireDate = (case 
+                when idCarLicense = ${Constants.CarLicenseCode.REGISTRATION_CERTIFICATE} then '${noExpireDate}' 
+                when idCarLicense = ${Constants.CarLicenseCode.PERIODIC_INSPECTION_CERTIFICATE} then '0' 
+                when idCarLicense = ${Constants.CarLicenseCode.INSURANCE} then '0' 
+                end),`;
+    }
+
+    if (sqlUpdate) {
+        sqlUpdate = sqlUpdate.substring(0, sqlUpdate.lastIndexOf(",")); // remove ',' last string sqlData
+        conditionSql = conditionSql.substring(0, conditionSql.lastIndexOf(",")); // remove ',' last string sqlData
+        sqlUpdate =
+            `UPDATE car_license_detail SET ` +
+            sqlUpdate +
+            ` WHERE idCar = ${idCar} AND idCarLicense IN (` +
+            conditionSql +
+            ")";
+
+        db.query(sqlUpdate, (err, result) => {
+            if (err) {
+                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                data.message = Strings.Common.ERROR;
+                res.status(200).send(data);
+            } else {
+                if (result.changedRows > 0) {
+                    data.status = Constants.ApiCode.OK;
+                    data.message = Strings.Common.SUCCESS;
+                    res.status(200).send(data);
+                    next();
+                } else {
+                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                    data.message = Strings.Common.ERROR_SERVER;
+                    res.status(200).send(data);
+                }
+            }
+        });
+    } else {
+        data.status = Constants.ApiCode.BAD_REQUEST;
+        data.message = Strings.Common.DATA_IS_UNCHANGED;
+        res.status(200).send(data);
+        next();
     }
 };
 
@@ -748,4 +885,5 @@ module.exports = {
     validateDataUpdateCar,
     updateCar,
     getImageCar,
+    updateCarLicense,
 };
