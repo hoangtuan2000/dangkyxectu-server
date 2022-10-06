@@ -114,6 +114,7 @@ const uploadImageToFirebase = async (req, res, next) => {
 };
 
 const deteleImageFromFirebase = async (req, res, next) => {
+    let data = { ...Constants.ResultData };
     let deleteImage = req.deleteImage;
     if (req.urlImageFirebase) {
         const storage = getStorage(appFirebase);
@@ -126,6 +127,9 @@ const deteleImageFromFirebase = async (req, res, next) => {
                 console.log("dateleImageFromFirebase err");
             });
     }
+    data.status = Constants.ApiCode.OK;
+    data.message = Strings.Common.SUCCESS;
+    res.status(200).send(data);
 };
 
 const validateUploadImageWhenUpdateCar = async (req, res, next) => {

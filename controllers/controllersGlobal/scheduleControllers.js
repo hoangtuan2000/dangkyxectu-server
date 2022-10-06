@@ -336,6 +336,10 @@ const getScheduleToSendEmail = (
                         colorTextScheduleStatus =
                             Constants.Styles.COLOR_ERROR;
                         break;
+                    case Constants.ScheduleStatus.RECEIVED:
+                        colorTextScheduleStatus =
+                            Constants.Styles.COLOR_BLUE_GREEN;
+                        break;
                 }
                 const startDate = new Date(
                     parseInt(result.startDate) * 1000

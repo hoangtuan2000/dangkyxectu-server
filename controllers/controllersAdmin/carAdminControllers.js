@@ -276,7 +276,10 @@ const getCarLicense = async (req, res) => {
             }
             const result = await executeQuery(
                 db,
-                `SELECT * FROM car_license_detail WHERE idCar = ${idCar} AND idCarLicense = ${idCarLicense}`
+                `SELECT cld.*, ad.fullName as fullNameAdmin, ad.code as codeAdmin
+                FROM car_license_detail as cld
+                LEFT JOIN user as ad ON ad.idUser = cld.idAdmin
+                WHERE idCar = ${idCar} AND idCarLicense = ${idCarLicense}`
             );
             if (!result) {
                 data.status = Constants.ApiCode.BAD_REQUEST;
@@ -423,12 +426,13 @@ const createCar = async (req, res, next) => {
     let data = { ...Constants.ResultData };
     if (req.userToken) {
         if (req.urlImageFirebase) {
+            const idUser = req.userToken.idUser;
             const urlImageFirebase = req.urlImageFirebase;
             const currentDate = helper.formatTimeStamp(new Date().getTime());
             const idCarStatus = Constants.CarStatusCode.WORK;
             // INSERT CAR
             const sqlCreateCar = `INSERT INTO
-                            car(licensePlates, image, createdAt, idCarColor, idCarBrand, idCarStatus, idCarType) VALUES (?,?,?,?,?,?,?)`;
+                car(licensePlates, image, createdAt, idCarColor, idCarBrand, idCarStatus, idCarType, idAdmin) VALUES (?,?,?,?,?,?,?,?)`;
             db.beginTransaction(function (err) {
                 if (err) {
                     data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
@@ -445,6 +449,7 @@ const createCar = async (req, res, next) => {
                         idCarBrand,
                         idCarStatus,
                         idCarType,
+                        idUser,
                     ],
                     function (error, results, fields) {
                         if (error) {
@@ -499,85 +504,97 @@ const createCarLicense = async (req, res, next) => {
     } = req.body;
     let data = { ...Constants.ResultData };
 
-    const idCarJustCreate = req.idCarJustCreate;
-    const currentDate = helper.formatTimeStamp(new Date().getTime());
-    const noExpireDate = helper.isTwoEqualDateTimestamp(
-        dateCarRegistrationCertificate[0],
-        dateCarRegistrationCertificate[1]
-    )
-        ? 1
-        : 0;
-    // FORMAT DATA
-    let arrayData = [
-        [
-            idCarJustCreate,
-            Constants.CarLicenseCode.REGISTRATION_CERTIFICATE,
-            helper.formatTimeStamp(dateCarRegistrationCertificate[0]),
-            helper.formatTimeStamp(dateCarRegistrationCertificate[1]),
-            noExpireDate,
-            currentDate,
-        ],
-        [
-            idCarJustCreate,
-            Constants.CarLicenseCode.PERIODIC_INSPECTION_CERTIFICATE,
-            helper.formatTimeStamp(datePeriodicInspectionCertificate[0]),
-            helper.formatTimeStamp(datePeriodicInspectionCertificate[1]),
-            0,
-            currentDate,
-        ],
-        [
-            idCarJustCreate,
-            Constants.CarLicenseCode.INSURANCE,
-            helper.formatTimeStamp(dateCarInsurance[0]),
-            helper.formatTimeStamp(dateCarInsurance[1]),
-            0,
-            currentDate,
-        ],
-    ];
+    if (req.userToken) {
+        const idUser = req.userToken.idUser;
+        const idCarJustCreate = req.idCarJustCreate;
+        const currentDate = helper.formatTimeStamp(new Date().getTime());
+        const noExpireDate = helper.isTwoEqualDateTimestamp(
+            dateCarRegistrationCertificate[0],
+            dateCarRegistrationCertificate[1]
+        )
+            ? 1
+            : 0;
+        // FORMAT DATA
+        let arrayData = [
+            [
+                idCarJustCreate,
+                Constants.CarLicenseCode.REGISTRATION_CERTIFICATE,
+                helper.formatTimeStamp(dateCarRegistrationCertificate[0]),
+                helper.formatTimeStamp(dateCarRegistrationCertificate[1]),
+                noExpireDate,
+                currentDate,
+                idUser,
+            ],
+            [
+                idCarJustCreate,
+                Constants.CarLicenseCode.PERIODIC_INSPECTION_CERTIFICATE,
+                helper.formatTimeStamp(datePeriodicInspectionCertificate[0]),
+                helper.formatTimeStamp(datePeriodicInspectionCertificate[1]),
+                0,
+                currentDate,
+                idUser,
+            ],
+            [
+                idCarJustCreate,
+                Constants.CarLicenseCode.INSURANCE,
+                helper.formatTimeStamp(dateCarInsurance[0]),
+                helper.formatTimeStamp(dateCarInsurance[1]),
+                0,
+                currentDate,
+                idUser,
+            ],
+        ];
 
-    // INSERT CAR LICENSE
-    const sqlCreateCarLicense = `INSERT INTO car_license_detail(idCar, idCarLicense, carLicenseDate, carLicenseExpirationDate, noExpireDate, createdAt) VALUES ? `;
-    db.beginTransaction(function (err) {
-        if (err) {
-            data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-            data.message = Strings.Common.ERROR;
-            res.status(200).send(data);
-        }
-        db.query(
-            sqlCreateCarLicense,
-            [arrayData],
-            function (error, results, fields) {
-                if (error) {
-                    return db.rollback(function () {
-                        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-                        data.message = Strings.Common.ERROR;
-                        res.status(200).send(data);
-                    });
-                } else {
-                    if (results.affectedRows > 0) {
-                        db.commit(function (err) {
-                            if (err) {
-                                return db.rollback(function () {
-                                    data.status =
-                                        Constants.ApiCode.INTERNAL_SERVER_ERROR;
-                                    data.message = Strings.Common.ERROR;
-                                    res.status(200).send(data);
-                                });
-                            } else {
-                                data.status = Constants.ApiCode.OK;
-                                data.message = Strings.Common.SUCCESS;
-                                res.status(200).send(data);
-                            }
+        // INSERT CAR LICENSE
+        const sqlCreateCarLicense = `INSERT INTO car_license_detail(idCar, idCarLicense, carLicenseDate, carLicenseExpirationDate, noExpireDate, createdAt, idAdmin) VALUES ? `;
+        db.beginTransaction(function (err) {
+            if (err) {
+                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                data.message = Strings.Common.ERROR;
+                res.status(200).send(data);
+            }
+            db.query(
+                sqlCreateCarLicense,
+                [arrayData],
+                function (error, results, fields) {
+                    if (error) {
+                        return db.rollback(function () {
+                            data.status =
+                                Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                            data.message = Strings.Common.ERROR;
+                            res.status(200).send(data);
                         });
                     } else {
-                        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-                        data.message = Strings.Common.ERROR;
-                        res.status(200).send(data);
+                        if (results.affectedRows > 0) {
+                            db.commit(function (err) {
+                                if (err) {
+                                    return db.rollback(function () {
+                                        data.status =
+                                            Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                                        data.message = Strings.Common.ERROR;
+                                        res.status(200).send(data);
+                                    });
+                                } else {
+                                    data.status = Constants.ApiCode.OK;
+                                    data.message = Strings.Common.SUCCESS;
+                                    res.status(200).send(data);
+                                }
+                            });
+                        } else {
+                            data.status =
+                                Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                            data.message = Strings.Common.ERROR;
+                            res.status(200).send(data);
+                        }
                     }
                 }
-            }
-        );
-    });
+            );
+        });
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
 };
 
 // UPDATE CAR
@@ -700,6 +717,7 @@ const updateCar = async (req, res, next) => {
     } = req.body;
     let data = { ...Constants.ResultData };
     if (req.userToken) {
+        const idUser = req.userToken.idUser;
         const urlImageFirebase = req.urlImageFirebase;
         const currentDate = helper.formatTimeStamp(new Date().getTime());
         // UPDATE CAR
@@ -725,7 +743,7 @@ const updateCar = async (req, res, next) => {
         }
 
         if (sqlData) {
-            sql = `UPDATE car SET ${sqlData} updatedAt = ${currentDate} WHERE idCar = ${idCar}`;
+            sql = `UPDATE car SET ${sqlData} updatedAt = ${currentDate}, idAdmin = ${idUser} WHERE idCar = ${idCar}`;
         }
 
         if (sql) {
@@ -763,114 +781,97 @@ const updateCarLicense = async (req, res, next) => {
     } = req.body;
     let data = { ...Constants.ResultData };
 
-    const currentDate = helper.formatTimeStamp(new Date().getTime());
+    if (req.userToken) {
+        const idUser = req.userToken.idUser;
+        // FORMAT SQL
+        if (
+            dateCarRegistrationCertificate ||
+            datePeriodicInspectionCertificate ||
+            dateCarInsurance
+        ) {
+            const currentDate = helper.formatTimeStamp(new Date().getTime());
+            let errorUpdate = false;
 
-    let sqlUpdate = "";
-    let conditionSql = "";
-    // FORMAT SQL
-    if (
-        dateCarRegistrationCertificate ||
-        datePeriodicInspectionCertificate ||
-        dateCarInsurance
-    ) {
-        let carLicenseDate = "";
-        let carLicenseExpirationDate = "";
+            // UPDATE Registration Certificate
+            if (dateCarRegistrationCertificate) {
+                const noExpireDate = helper.isTwoEqualDateTimestamp(
+                    dateCarRegistrationCertificate[0],
+                    dateCarRegistrationCertificate[1]
+                )
+                    ? 1
+                    : 0;
+                let carLicenseDate = helper.formatTimeStamp(
+                    dateCarRegistrationCertificate[0]
+                );
+                let carLicenseExpirationDate = helper.formatTimeStamp(
+                    dateCarRegistrationCertificate[1]
+                );
+                const result = await executeQuery(
+                    db,
+                    `UPDATE car_license_detail SET carLicenseDate='${carLicenseDate}',
+                carLicenseExpirationDate='${carLicenseExpirationDate}',
+                noExpireDate='${noExpireDate}', updatedAt='${currentDate}' , idAdmin=${idUser}
+                WHERE idCar = '${idCar}' AND idCarLicense = '${Constants.CarLicenseCode.REGISTRATION_CERTIFICATE}' `
+                );
+                if (!result || result.changedRows <= 0) {
+                    errorUpdate = true;
+                }
+            }
 
-        // dateCarRegistrationCertificate
-        dateCarRegistrationCertificate &&
-            (carLicenseDate += ` when idCarLicense = ${
-                Constants.CarLicenseCode.REGISTRATION_CERTIFICATE
-            } 
-            then ${dateCarRegistrationCertificate[0] / 1000}  `) &&
-            (carLicenseExpirationDate += ` when idCarLicense = ${
-                Constants.CarLicenseCode.REGISTRATION_CERTIFICATE
-            } 
-            then ${dateCarRegistrationCertificate[1] / 1000}  `) &&
-            (conditionSql += `${Constants.CarLicenseCode.REGISTRATION_CERTIFICATE}, `);
+            // UPDATE Periodic Inspection Certificate
+            if (datePeriodicInspectionCertificate) {
+                let carLicenseDate = helper.formatTimeStamp(
+                    datePeriodicInspectionCertificate[0]
+                );
+                let carLicenseExpirationDate = helper.formatTimeStamp(
+                    datePeriodicInspectionCertificate[1]
+                );
+                const result = await executeQuery(
+                    db,
+                    `UPDATE car_license_detail SET carLicenseDate='${carLicenseDate}',
+                carLicenseExpirationDate='${carLicenseExpirationDate}',
+                noExpireDate='0', updatedAt='${currentDate}' , idAdmin=${idUser}
+                WHERE idCar = '${idCar}' AND idCarLicense = '${Constants.CarLicenseCode.PERIODIC_INSPECTION_CERTIFICATE}'`
+                );
+                if (!result || result.changedRows <= 0) {
+                    errorUpdate = true;
+                }
+            }
 
-        // datePeriodicInspectionCertificate
-        datePeriodicInspectionCertificate &&
-            (carLicenseDate += ` when idCarLicense = ${
-                Constants.CarLicenseCode.PERIODIC_INSPECTION_CERTIFICATE
-            } 
-            then ${datePeriodicInspectionCertificate[0] / 1000} `) &&
-            (carLicenseExpirationDate += ` when idCarLicense = ${
-                Constants.CarLicenseCode.PERIODIC_INSPECTION_CERTIFICATE
-            } 
-            then ${datePeriodicInspectionCertificate[1] / 1000}  `) &&
-            (conditionSql += `${Constants.CarLicenseCode.PERIODIC_INSPECTION_CERTIFICATE}, `);
+            // UPDATE Insurance
+            if (dateCarInsurance) {
+                let carLicenseDate = helper.formatTimeStamp(
+                    dateCarInsurance[0]
+                );
+                let carLicenseExpirationDate = helper.formatTimeStamp(
+                    dateCarInsurance[1]
+                );
+                const result = await executeQuery(
+                    db,
+                    `UPDATE car_license_detail SET carLicenseDate='${carLicenseDate}',
+                carLicenseExpirationDate='${carLicenseExpirationDate}',
+                noExpireDate='0', updatedAt='${currentDate}', idAdmin=${idUser}
+                WHERE idCar = '${idCar}' AND idCarLicense = '${Constants.CarLicenseCode.INSURANCE}'`
+                );
+                if (!result || result.changedRows <= 0) {
+                    errorUpdate = true;
+                }
+            }
 
-        // dateCarInsurance
-        dateCarInsurance &&
-            (carLicenseDate += ` when idCarLicense = ${
-                Constants.CarLicenseCode.INSURANCE
-            } 
-            then ${dateCarInsurance[0] / 1000} `) &&
-            (carLicenseExpirationDate += ` when idCarLicense = ${
-                Constants.CarLicenseCode.INSURANCE
-            } 
-            then ${dateCarInsurance[1] / 1000} `) &&
-            (conditionSql += `${Constants.CarLicenseCode.INSURANCE}, `);
-
-        sqlUpdate += `carLicenseDate = (case 
-                                ${carLicenseDate}
-                            end),
-                        carLicenseExpirationDate = (case 
-                            ${carLicenseExpirationDate}
-                            end),
-                        updatedAt = ${currentDate},
-                        `;
-    }
-
-    // FORMAT SQL
-    let noExpireDate = null;
-    if (dateCarRegistrationCertificate) {
-        noExpireDate = helper.isTwoEqualDateTimestamp(
-            dateCarRegistrationCertificate[0],
-            dateCarRegistrationCertificate[1]
-        )
-            ? 1
-            : 0;
-        sqlUpdate += ` noExpireDate = (case 
-                when idCarLicense = ${Constants.CarLicenseCode.REGISTRATION_CERTIFICATE} then '${noExpireDate}' 
-                when idCarLicense = ${Constants.CarLicenseCode.PERIODIC_INSPECTION_CERTIFICATE} then '0' 
-                when idCarLicense = ${Constants.CarLicenseCode.INSURANCE} then '0' 
-                end),`;
-    }
-
-    if (sqlUpdate) {
-        sqlUpdate = sqlUpdate.substring(0, sqlUpdate.lastIndexOf(",")); // remove ',' last string sqlData
-        conditionSql = conditionSql.substring(0, conditionSql.lastIndexOf(",")); // remove ',' last string sqlData
-        sqlUpdate =
-            `UPDATE car_license_detail SET ` +
-            sqlUpdate +
-            ` WHERE idCar = ${idCar} AND idCarLicense IN (` +
-            conditionSql +
-            ")";
-
-        db.query(sqlUpdate, (err, result) => {
-            if (err) {
+            if (errorUpdate) {
                 data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
                 data.message = Strings.Common.ERROR;
                 res.status(200).send(data);
             } else {
-                if (result.changedRows > 0) {
-                    data.status = Constants.ApiCode.OK;
-                    data.message = Strings.Common.SUCCESS;
-                    res.status(200).send(data);
-                    next();
-                } else {
-                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-                    data.message = Strings.Common.ERROR_SERVER;
-                    res.status(200).send(data);
-                }
+                next();
             }
-        });
+        } else {
+            next();
+        }
     } else {
-        data.status = Constants.ApiCode.BAD_REQUEST;
-        data.message = Strings.Common.DATA_IS_UNCHANGED;
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
         res.status(200).send(data);
-        next();
     }
 };
 

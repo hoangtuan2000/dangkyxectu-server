@@ -230,14 +230,14 @@ const createOrUpdateReview = async (req, res) => {
     }
 };
 
-const updateScheduleApproved = async (req, res) => {
+const updatePhoneNumberUserInSchedule = async (req, res) => {
     const { phoneUser, idSchedule } = req.body;
 
     let data = { ...Constants.ResultData };
 
     if (req.userToken) {
         if (helper.isValidPhoneNumber(phoneUser)) {
-            let sql = `UPDATE schedule SET phoneUser=?, updatedAt=? WHERE idSchedule = ? AND idScheduleStatus = 2`;
+            let sql = `UPDATE schedule SET phoneUser=?, updatedAt=? WHERE idSchedule = ?`;
             let currentDate = helper.formatTimeStamp(new Date().getTime());
             db.query(
                 sql,
@@ -426,7 +426,7 @@ const updateSchedulePending = async (req, res) => {
 module.exports = {
     getUserRegisteredScheduleList,
     createOrUpdateReview,
-    updateScheduleApproved,
+    updatePhoneNumberUserInSchedule,
     cancelSchedule,
     updateSchedulePending,
 };

@@ -38,6 +38,7 @@ const Constants = {
         COMPLETE: "Hoàn Thành",
         CANCELLED: "Đã Hủy",
         REFUSE: "Từ Chối",
+        RECEIVED: "Đã Nhận",
     },
 
     ScheduleStatusCode: {
@@ -46,6 +47,7 @@ const Constants = {
         COMPLETE: 3,
         CANCELLED: 4,
         REFUSE: 5,
+        RECEIVED: 6,
     },
 
     CarStatusCode: {
@@ -78,6 +80,7 @@ const Constants = {
         COLOR_SECONDARY: "gray",
         COLOR_PINK_LIGHT: "#ce93d8",
         COLOR_BLUE_LIGHT: "#29b6f6",
+        COLOR_BLUE_GREEN: "#03a882",
     },
 };
 

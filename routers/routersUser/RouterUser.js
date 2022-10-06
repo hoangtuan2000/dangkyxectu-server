@@ -14,9 +14,9 @@ router.post(
     scheduleUserControllers.createOrUpdateReview
 );
 router.post(
-    "/updateScheduleApproved",
+    "/updatePhoneNumberUserInSchedule",
     authenticationControllers.getUserToken,
-    scheduleUserControllers.updateScheduleApproved
+    scheduleUserControllers.updatePhoneNumberUserInSchedule
 );
 router.post(
     "/cancelSchedule",
