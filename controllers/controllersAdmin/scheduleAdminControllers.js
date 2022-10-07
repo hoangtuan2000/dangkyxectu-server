@@ -374,7 +374,9 @@ const updateSchedule = async (req, res) => {
                             sql = `UPDATE schedule SET updatedAt=${currentDate}, idAdmin=${idAdmin}, 
                                  idScheduleStatus=${idScheduleStatus} WHERE idSchedule = ${idSchedule}`;
                             executeUpdate(sql);
-                        } else if (
+                        } 
+                        // UPDATE DRIVER
+                        else if (
                             helper.isDateTimeStampGreaterThanCurrentDate(
                                 resultExecuteQuery[0].startDate
                             ) &&

@@ -39,6 +39,7 @@ const Constants = {
         CANCELLED: "Đã Hủy",
         REFUSE: "Từ Chối",
         RECEIVED: "Đã Nhận",
+        MOVING: "Đang Di Chuyển",
     },
 
     ScheduleStatusCode: {
@@ -48,6 +49,7 @@ const Constants = {
         CANCELLED: 4,
         REFUSE: 5,
         RECEIVED: 6,
+        MOVING: 7,
     },
 
     CarStatusCode: {
