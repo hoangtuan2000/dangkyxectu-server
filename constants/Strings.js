@@ -29,6 +29,7 @@ const Strings = {
         LIMIT_FIELD_VALUE: "Giá Trị Trường Quá Dài",
         LIMIT_FIELD_COUNT: "Quá Nhiều Trường",
         LIMIT_UNEXPECTED_FILE: "Trường Không Mong Đợi",
+        ONLY_EIGHT_IMAGES: 'Chỉ Cho Phép Tải Lên 8 Ảnh',
         MISSING_FIELD_NAME: "Thiếu Tên Trường",
         ONLY_SUPPORT_IMAGE: "Chỉ Hỗ Trợ Tệp Hình Ảnh",
         ERROR_UPLOAD_IMAGE: "Lỗi Tải Ảnh",

@@ -82,7 +82,7 @@ const uploadImageToFirebase = async (req, res, next) => {
         const storage = getStorage(appFirebase);
         const storageRef = ref(
             storage,
-            `images/${currentDate}_${randomNumber}_${req.file.originalname}`
+            `imagesCar/${currentDate}_${randomNumber}_${req.file.originalname}`
         );
         const metadata = {
             contentType: req.file.mimetype,
@@ -113,7 +113,7 @@ const uploadImageToFirebase = async (req, res, next) => {
     }
 };
 
-const deteleImageFromFirebase = async (req, res, next) => {
+const deleteImageFromFirebase = async (req, res, next) => {
     let data = { ...Constants.ResultData };
     let deleteImage = req.deleteImage;
     if (req.urlImageFirebase) {
@@ -189,6 +189,6 @@ const validateUploadImageWhenUpdateCar = async (req, res, next) => {
 module.exports = {
     validateUploadImageWhenCreateCar,
     uploadImageToFirebase,
-    deteleImageFromFirebase,
+    deleteImageFromFirebase,
     validateUploadImageWhenUpdateCar,
 };

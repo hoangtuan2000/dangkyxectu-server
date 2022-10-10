@@ -44,7 +44,7 @@ const getCarListForAdmin = async (req, res) => {
                                         GROUP BY schedule.idCar) as trip ON trip.idCar = ca.idCar
                                     LEFT JOIN 
                                         (SELECT COUNT(idCar) as numberOfMaintenance, idCar
-                                        FROM car_breakdown
+                                        FROM car_maintenance
                                         GROUP BY idCar) as maintenance ON maintenance.idCar = ca.idCar
                                     LEFT JOIN
                                         (SELECT COUNT(cld.idCar) as licenseNumberExpired, cld.idCar
@@ -53,7 +53,7 @@ const getCarListForAdmin = async (req, res) => {
                                         AND DATE(FROM_UNIXTIME(cld.carLicenseExpirationDate)) <= CURRENT_DATE()
                                         AND noExpireDate = 0
                                         GROUP BY cld.idCar) as licenseExpired ON licenseExpired.idCar = ca.idCar
-                                    WHERE 1 = 1 `;
+                                    WHERE 1 = 1`;
             // CHECK CONDITION SQL
             let conditionSql = "";
             if (carType && carType.length > 0) {
@@ -164,7 +164,7 @@ const getCarListForAdmin = async (req, res) => {
                                     GROUP BY schedule.idCar) as trip ON trip.idCar = ca.idCar
                             LEFT JOIN 
                                 (SELECT COUNT(idCar) as numberOfMaintenance, idCar
-                                    FROM car_breakdown
+                                    FROM car_maintenance
                                     GROUP BY idCar) as maintenance ON maintenance.idCar = ca.idCar
                             LEFT JOIN
                                 (SELECT COUNT(cld.idCar) as licenseNumberExpired, cld.idCar

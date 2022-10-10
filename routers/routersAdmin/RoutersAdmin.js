@@ -69,7 +69,7 @@ router.post(
     imageAdminControllers.uploadImageToFirebase,
     carAdminControllers.updateCar,
     carAdminControllers.updateCarLicense,
-    imageAdminControllers.deteleImageFromFirebase,
+    imageAdminControllers.deleteImageFromFirebase,
 );
 
 module.exports = router;
