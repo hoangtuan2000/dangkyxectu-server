@@ -146,6 +146,162 @@ const getDriverScheduleList = async (req, res) => {
     }
 };
 
+const checkBrokenCarPartsHasBeenConfirmed = async (req, res, next) => {
+    const { idSchedule } = req.body;
+    let data = { ...Constants.ResultData };
+    const sql = `SELECT * FROM schedule WHERE idSchedule = ?`;
+    db.query(sql, idSchedule, (err, result) => {
+        if (err) {
+            data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+            data.message = Strings.Common.ERROR;
+            res.status(200).send(data);
+        } else {
+            if (result.length > 0) {
+                if (
+                    helper.isNullOrEmpty(result[0].isCarFailBeforeRun) ||
+                    helper.isNullOrEmpty(result[0].isCarFailAfterRun)
+                ) {
+                    req.updateIsCarFailBeforeRun = helper.isNullOrEmpty(
+                        result[0].isCarFailBeforeRun
+                    )
+                        ? true
+                        : false;
+                    next();
+                } else {
+                    data.status = Constants.ApiCode.BAD_REQUEST;
+                    data.message =
+                        Strings.Common.CAR_STATUS_HAS_BEEN_UPDATED_BEFORE;
+                    res.status(200).send(data);
+                }
+            } else {
+                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                data.message = Strings.Common.ERROR_GET_DATA;
+                res.status(200).send(data);
+            }
+        }
+    });
+};
+
+const validateDataToConfirmReceivedOrCompleteOfSchedule = async (
+    req,
+    res,
+    next
+) => {
+    const { isCarBroken, arrayIdBrokenCarParts, arrayComment } = req.body;
+    let data = { ...Constants.ResultData };
+
+    if (isCarBroken) {
+        if (
+            helper.isArray(arrayIdBrokenCarParts) &&
+            helper.isArray(arrayComment) &&
+            !helper.isArrayEmpty(arrayIdBrokenCarParts) &&
+            !helper.isArrayEmpty(arrayComment) &&
+            !helper.isArrayEmpty(req.files)
+        ) {
+            if (
+                arrayIdBrokenCarParts.length == arrayComment.length &&
+                arrayComment.length == req.files.length
+            ) {
+                next();
+            } else {
+                data.status = Constants.ApiCode.BAD_REQUEST;
+                data.message = Strings.Common.INVALID_DATA;
+                res.status(200).send(data);
+            }
+        } else {
+            data.status = Constants.ApiCode.BAD_REQUEST;
+            data.message = Strings.Common.INVALID_DATA;
+            res.status(200).send(data);
+        }
+    } else {
+        next();
+    }
+};
+
+const confirmReceivedOrCompleteOfSchedule = async (req, res, next) => {
+    const { idSchedule, isCarBroken, arrayIdBrokenCarParts, arrayComment } =
+        req.body;
+    let data = { ...Constants.ResultData };
+
+    if (req.userToken) {
+        // BROKEN CAR PARTS
+        if (isCarBroken) {
+            let sql = "";
+            if (req.updateIsCarFailBeforeRun) {
+                sql = `UPDATE schedule SET isCarFailBeforeRun= ?, idScheduleStatus= ${Constants.ScheduleStatusCode.RECEIVED} WHERE idSchedule = ?`;
+            } else {
+                sql = `UPDATE schedule SET isCarFailAfterRun= ?, idScheduleStatus= ${Constants.ScheduleStatusCode.RECEIVED} WHERE idSchedule = ?`;
+            }
+            db.query(sql, [1, idSchedule], (err, result) => {
+                if (err) {
+                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                    data.message = Strings.Common.ERROR;
+                    res.status(200).send(data);
+                } else {
+                    if (result.changedRows > 0) {
+                        data.status = Constants.ApiCode.OK;
+                        data.message = Strings.Common.SUCCESS;
+                        res.status(200).send(data);
+                        next()
+                    } else {
+                        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                        data.message = Strings.Common.ERROR;
+                        res.status(200).send(data);
+                    }
+                }
+            });
+        }
+        // NOT BROKEN CAR PARTS
+        else {
+            let sql = "";
+            if (req.updateIsCarFailBeforeRun) {
+                sql = `UPDATE schedule SET isCarFailBeforeRun= ?, idScheduleStatus= ${Constants.ScheduleStatusCode.RECEIVED} WHERE idSchedule = ?`;
+            } else {
+                sql = `UPDATE schedule SET isCarFailAfterRun= ?, idScheduleStatus= ${Constants.ScheduleStatusCode.RECEIVED} WHERE idSchedule = ?`;
+            }
+            db.query(sql, [0, idSchedule], (err, result) => {
+                if (err) {
+                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                    data.message = Strings.Common.ERROR;
+                    res.status(200).send(data);
+                } else {
+                    if (result.changedRows > 0) {
+                        data.status = Constants.ApiCode.OK;
+                        data.message = Strings.Common.SUCCESS;
+                        res.status(200).send(data);
+                    } else {
+                        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                        data.message = Strings.Common.ERROR;
+                        res.status(200).send(data);
+                    }
+                }
+            });
+        }
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
+
+const createBrokenCarParts = async (req, res, next) => {
+    const { idSchedule, isCarBroken, arrayIdBrokenCarParts, arrayComment } =
+        req.body;
+    let data = { ...Constants.ResultData };
+
+    if (req.userToken) {
+        
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
+
 module.exports = {
     getDriverScheduleList,
+    validateDataToConfirmReceivedOrCompleteOfSchedule,
+    checkBrokenCarPartsHasBeenConfirmed,
+    confirmReceivedOrCompleteOfSchedule,
+    createBrokenCarParts
 };

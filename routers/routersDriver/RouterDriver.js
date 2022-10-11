@@ -8,11 +8,16 @@ router.post(
     authenticationControllers.getUserToken,
     scheduleDriverControllers.getDriverScheduleList
 );
+
 router.post(
     "/carBrokenPartsConfirmation",
     authenticationControllers.getUserToken,
-    imageDriverControllers.validateUploadImageBrokenCarParts,
-    imageDriverControllers.uploadMultipleImageToFirebase
+    imageDriverControllers.validateUploadImagesBrokenCarParts,
+    scheduleDriverControllers.checkBrokenCarPartsHasBeenConfirmed,
+    scheduleDriverControllers.validateDataToConfirmReceivedOrCompleteOfSchedule,
+    imageDriverControllers.uploadMultipleImagesBrokenCarPartsToFirebase,
+    scheduleDriverControllers.confirmReceivedOrCompleteOfSchedule,
+    scheduleDriverControllers.createBrokenCarParts,
 );
 
 module.exports = router;
