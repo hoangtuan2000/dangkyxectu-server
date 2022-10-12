@@ -5,19 +5,25 @@ const router = require("express").Router();
 
 router.post(
     "/getDriverScheduleList",
-    authenticationControllers.getUserToken,
+    authenticationControllers.authenticationDriver,
     scheduleDriverControllers.getDriverScheduleList
 );
 
 router.post(
-    "/carBrokenPartsConfirmation",
-    authenticationControllers.getUserToken,
+    "/confirmReceivedOrCompleteOfSchedule",
+    authenticationControllers.authenticationDriver,
     imageDriverControllers.validateUploadImagesBrokenCarParts,
     scheduleDriverControllers.checkBrokenCarPartsHasBeenConfirmed,
     scheduleDriverControllers.validateDataToConfirmReceivedOrCompleteOfSchedule,
     imageDriverControllers.uploadMultipleImagesBrokenCarPartsToFirebase,
     scheduleDriverControllers.confirmReceivedOrCompleteOfSchedule,
     scheduleDriverControllers.createBrokenCarParts,
+);
+
+router.post(
+    "/confirmMoving",
+    authenticationControllers.authenticationDriver,
+    scheduleDriverControllers.confirmMoving,
 );
 
 module.exports = router;

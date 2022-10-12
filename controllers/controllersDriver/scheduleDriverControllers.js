@@ -146,6 +146,7 @@ const getDriverScheduleList = async (req, res) => {
     }
 };
 
+// UPDATE RECEIVE AND COMPLETE SCHEDULE
 const checkBrokenCarPartsHasBeenConfirmed = async (req, res, next) => {
     console.log("Call checkBrokenCarPartsHasBeenConfirmed");
     const { idSchedule } = req.body;
@@ -296,7 +297,8 @@ const createBrokenCarParts = async (req, res) => {
                 helper.isArray(arrayComment)
             ) {
                 if (
-                    req.arrayUrlImagesFirebase.length == arrayIdCarParts.length &&
+                    req.arrayUrlImagesFirebase.length ==
+                        arrayIdCarParts.length &&
                     arrayIdCarParts.length == arrayComment.length
                 ) {
                     const idUser = req.userToken.idUser;
@@ -321,7 +323,8 @@ const createBrokenCarParts = async (req, res) => {
                     }
                     db.beginTransaction(function (err) {
                         if (err) {
-                            data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                            data.status =
+                                Constants.ApiCode.INTERNAL_SERVER_ERROR;
                             data.message = Strings.Common.ERROR;
                             res.status(200).send(data);
                         }
@@ -340,12 +343,14 @@ const createBrokenCarParts = async (req, res) => {
                                             return db.rollback(function () {
                                                 data.status =
                                                     Constants.ApiCode.INTERNAL_SERVER_ERROR;
-                                                data.message = Strings.Common.ERROR;
+                                                data.message =
+                                                    Strings.Common.ERROR;
                                                 res.status(200).send(data);
                                             });
                                         } else {
                                             data.status = Constants.ApiCode.OK;
-                                            data.message = Strings.Common.SUCCESS;
+                                            data.message =
+                                                Strings.Common.SUCCESS;
                                             res.status(200).send(data);
                                         }
                                     });
@@ -359,7 +364,7 @@ const createBrokenCarParts = async (req, res) => {
                         });
                     });
                 }
-            }else{
+            } else {
                 data.status = Constants.ApiCode.BAD_REQUEST;
                 data.message = Strings.Common.INVALID_DATA;
                 res.status(200).send(data);
@@ -376,10 +381,84 @@ const createBrokenCarParts = async (req, res) => {
     }
 };
 
+// UPDATE MOVING SCHEDULE
+const confirmMoving = async (req, res) => {
+    console.log("Call Driver confirmMoving");
+
+    const { idSchedule } = req.body;
+    let data = { ...Constants.ResultData };
+
+    if (req.userToken) {
+        // CHECK SCHEDULE STATUS BEFORE UPDATE SCHEDULE STATUS MOVING
+        const sqlCheck = `SELECT * FROM schedule WHERE idSchedule = ?`;
+        const resultCheck = await executeQuery(db, sqlCheck, idSchedule);
+        if (!resultCheck) {
+            data.status = Constants.ApiCode.BAD_REQUEST;
+            data.message = Strings.Common.ERROR_GET_DATA;
+            res.status(200).send(data);
+        } else {
+            if (resultCheck.length > 0) {
+                if (
+                    resultCheck[0].idScheduleStatus ==
+                    Constants.ScheduleStatusCode.RECEIVED
+                ) {
+                    // UPDATE SCHEDULE STATUS MOVING
+                    const idUser = req.userToken.idUser;
+                    const currentDate = helper.formatTimeStamp(
+                        new Date().getTime()
+                    );
+                    const sql = `UPDATE schedule SET updatedAt= ?, idUserLastUpdated= ?, idScheduleStatus= ? WHERE idSchedule = ?`;
+                    db.query(
+                        sql,
+                        [
+                            currentDate,
+                            idUser,
+                            Constants.ScheduleStatusCode.MOVING,
+                            idSchedule,
+                        ],
+                        (err, result) => {
+                            if (err) {
+                                data.status =
+                                    Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                                data.message = Strings.Common.ERROR;
+                                res.status(200).send(data);
+                            } else {
+                                if (result.changedRows > 0) {
+                                    data.status = Constants.ApiCode.OK;
+                                    data.message = Strings.Common.SUCCESS;
+                                    res.status(200).send(data);
+                                } else {
+                                    data.status =
+                                        Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                                    data.message = Strings.Common.ERROR;
+                                    res.status(200).send(data);
+                                }
+                            }
+                        }
+                    );
+                } else {
+                    data.status = Constants.ApiCode.BAD_REQUEST;
+                    data.message = Strings.Common.CURRENTLY_UNABLE_TO_UPDATE;
+                    res.status(200).send(data);
+                }
+            } else {
+                data.status = Constants.ApiCode.BAD_REQUEST;
+                data.message = Strings.Common.ERROR_GET_DATA;
+                res.status(200).send(data);
+            }
+        }
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
+
 module.exports = {
     getDriverScheduleList,
     validateDataToConfirmReceivedOrCompleteOfSchedule,
     checkBrokenCarPartsHasBeenConfirmed,
     confirmReceivedOrCompleteOfSchedule,
     createBrokenCarParts,
+    confirmMoving,
 };

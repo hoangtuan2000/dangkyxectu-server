@@ -169,7 +169,95 @@ const authenticationAdmin = async (req, res, next) => {
         }
          else {
             const userID = user.sub;
-            const sql = "SELECT idUser FROM user WHERE code = ? AND idRole = 1";
+            const sql = `SELECT idUser FROM user WHERE code = ? AND idRole = ${Constants.RoleCode.ADMIN}`;
+            db.query(sql, [userID], (err, result) => {
+                if (err) {
+                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                    data.message = Strings.Common.ERROR;
+                    res.status(200).send(data);
+                } else {
+                    if (result.length > 0) {
+                        req.userToken = result[0];
+                        next()
+                    } else {
+                        data.status = Constants.ApiCode.FORBIDDEN;
+                        data.message = Strings.Common.NOT_PERMISSION_ACCESS;
+                        res.status(200).send(data);
+                    }
+                }
+            });
+        }
+    })(req, res, next);
+};
+
+const authenticationDriver = async (req, res, next) => {
+    let data = { ...Constants.ResultData };
+    passport.authenticate("jwt", function (err, user, info) {
+        if (err) {
+            data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+            data.message = Strings.Common.ERROR;
+            res.status(200).send(data);
+        } 
+        else if (info && info.name == "TokenExpiredError") {
+            data.status = Constants.ApiCode.UNAUTHORIZED;
+            data.message = Strings.Common.YOUR_LOGIN_SESSION_EXPIRED;
+            res.status(200).send(data);
+        } else if (info && info.name == "JsonWebTokenError") {
+            data.status = Constants.ApiCode.BAD_REQUEST;
+            data.message = Strings.Common.UNAUTHENTICATED;
+            res.status(200).send(data);
+        } else if (!user) {
+            data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+            data.message = Strings.Common.USER_NOT_EXIST;
+            res.status(200).send(data);
+        }
+         else {
+            const userID = user.sub;
+            const sql = `SELECT idUser FROM user WHERE code = ? AND idRole = ${Constants.RoleCode.DRIVER}`;
+            db.query(sql, [userID], (err, result) => {
+                if (err) {
+                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                    data.message = Strings.Common.ERROR;
+                    res.status(200).send(data);
+                } else {
+                    if (result.length > 0) {
+                        req.userToken = result[0];
+                        next()
+                    } else {
+                        data.status = Constants.ApiCode.FORBIDDEN;
+                        data.message = Strings.Common.NOT_PERMISSION_ACCESS;
+                        res.status(200).send(data);
+                    }
+                }
+            });
+        }
+    })(req, res, next);
+};
+
+const authenticationUser = async (req, res, next) => {
+    let data = { ...Constants.ResultData };
+    passport.authenticate("jwt", function (err, user, info) {
+        if (err) {
+            data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+            data.message = Strings.Common.ERROR;
+            res.status(200).send(data);
+        } 
+        else if (info && info.name == "TokenExpiredError") {
+            data.status = Constants.ApiCode.UNAUTHORIZED;
+            data.message = Strings.Common.YOUR_LOGIN_SESSION_EXPIRED;
+            res.status(200).send(data);
+        } else if (info && info.name == "JsonWebTokenError") {
+            data.status = Constants.ApiCode.BAD_REQUEST;
+            data.message = Strings.Common.UNAUTHENTICATED;
+            res.status(200).send(data);
+        } else if (!user) {
+            data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+            data.message = Strings.Common.USER_NOT_EXIST;
+            res.status(200).send(data);
+        }
+         else {
+            const userID = user.sub;
+            const sql = `SELECT idUser FROM user WHERE code = ? AND idRole = ${Constants.RoleCode.USER}`;
             db.query(sql, [userID], (err, result) => {
                 if (err) {
                     data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
@@ -194,5 +282,7 @@ module.exports = {
     login,
     authentication,
     getUserToken,
-    authenticationAdmin
+    authenticationAdmin,
+    authenticationDriver,
+    authenticationUser
 };

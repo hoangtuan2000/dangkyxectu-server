@@ -32,6 +32,12 @@ const Constants = {
         CHARACTERS_MAX_LENGTH_LICENSE_PLATES: 10,
     },
 
+    RoleCode: {
+        ADMIN: 1,
+        DRIVER: 2,
+        USER: 3,
+    },
+
     ScheduleStatus: {
         PENDING: "Chờ Duyệt",
         APPROVED: "Đã Duyệt",
