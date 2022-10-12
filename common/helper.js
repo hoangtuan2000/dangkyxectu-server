@@ -17,7 +17,11 @@ const helper = {
     },
 
     isValidStringBetweenMinMaxLength: (value, minLen, maxLen) => {
-        if ((typeof value == "string" || typeof value == "number") && minLen && maxLen) {
+        if (
+            (typeof value == "string" || typeof value == "number") &&
+            minLen &&
+            maxLen
+        ) {
             value = value.toString();
             if (value.length >= minLen && value.length <= maxLen) {
                 return true;
@@ -97,6 +101,10 @@ const helper = {
             new Date(new Date(timeStamp * 1000).toDateString()) >
             new Date(new Date().toDateString())
         );
+    },
+
+    convertStringBooleanToBoolean: (stringBoolean) => {
+        return stringBoolean == "true";
     },
 
     // isDateTimeStampGreaterThanOrEqualCurrentDate: (timeStamp) => {

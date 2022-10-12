@@ -38,6 +38,7 @@ const Strings = {
         ERROR_NO_PICTURE: "Lỗi Không Có Hình Ảnh",
         LICENSE_PLATES_EXIST: "Biển Số Xe Đã Tồn Tại",
         DATA_IS_UNCHANGED: "Dữ Liệu Không Thay Đổi",
+        CURRENTLY_UNABLE_TO_UPDATE: "Hiện Không Thể Cập Nhật",
         SUPPORT_LENGTH_LICENSE_PLATES: `Biển Số Từ ${Constants.Common.CHARACTERS_MIN_LENGTH_LICENSE_PLATES} - ${Constants.Common.CHARACTERS_MAX_LENGTH_LICENSE_PLATES} Ký Tự`,
     },
 };

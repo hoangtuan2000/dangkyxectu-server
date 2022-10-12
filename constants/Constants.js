@@ -75,16 +75,16 @@ const Constants = {
         NOT_EXPIRES: 0,
     },
 
-    NameBrokenCarParts: {
-        FRONT_OF_CAR: "frontOfCar",
-        BACK_OF_CAR: "backOfCar",
-        CAR_FRONT_LIGHTS: "carFrontLights",
-        CAR_BACK_LIGHTS: "carBackLights",
-        LEFT_CAR_BODY: "leftCarBody",
-        RIGHT_CAR_BODY: "rightCarBody",
-        CAR_CONTROL_CENTER: "carControlCenter",
-        OTHER_CAR_PARTS: "otherCarParts",
-    },
+    // NameBrokenCarParts: {
+    //     FRONT_OF_CAR: "frontOfCar",
+    //     BACK_OF_CAR: "backOfCar",
+    //     CAR_FRONT_LIGHTS: "carFrontLights",
+    //     CAR_BACK_LIGHTS: "carBackLights",
+    //     LEFT_CAR_BODY: "leftCarBody",
+    //     RIGHT_CAR_BODY: "rightCarBody",
+    //     CAR_CONTROL_CENTER: "carControlCenter",
+    //     OTHER_CAR_PARTS: "otherCarParts",
+    // },
 
     Styles: {
         COLOR_PRIMARY: "#1976d2",

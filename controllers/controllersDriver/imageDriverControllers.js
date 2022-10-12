@@ -18,6 +18,7 @@ const {
 const { async } = require("@firebase/util");
 
 const validateUploadImagesBrokenCarParts = async (req, res, next) => {
+    console.log("Call validateUploadImagesBrokenCarParts");
     let data = { ...Constants.ResultData };
     uploadMultipleImageMulter(req, res, function (err) {
         if (err instanceof multer.MulterError) {
@@ -78,9 +79,10 @@ const validateUploadImagesBrokenCarParts = async (req, res, next) => {
 };
 
 const uploadMultipleImagesBrokenCarPartsToFirebase = async (req, res, next) => {
+    console.log("Call uploadMultipleImagesBrokenCarPartsToFirebase");
     const { isCarBroken } = req.body;
     let data = { ...Constants.ResultData };
-    if (req.files && isCarBroken) {
+    if (req.files && helper.convertStringBooleanToBoolean(isCarBroken)) {
         // UPLOAD
         if (req.files.length > 0) {
             const uploadedImages = await Promise.all(
@@ -113,7 +115,7 @@ const uploadMultipleImagesBrokenCarPartsToFirebase = async (req, res, next) => {
                             () => {
                                 getDownloadURL(uploadTask.snapshot.ref).then(
                                     (downloadURL) => {
-                                        resolve(false);
+                                        resolve(downloadURL);
                                     }
                                 );
                             }
@@ -143,6 +145,7 @@ const uploadMultipleImagesBrokenCarPartsToFirebase = async (req, res, next) => {
 };
 
 const deleteMultipleImagesFromFirebase = async (uploadedImages) => {
+    console.log("Call deleteMultipleImagesFromFirebase");
     if (uploadedImages.length > 0) {
         for (let i = 0; i < uploadedImages.length > 0; i++) {
             if (uploadedImages[i] != false) {

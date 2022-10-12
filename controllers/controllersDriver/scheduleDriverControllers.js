@@ -147,6 +147,7 @@ const getDriverScheduleList = async (req, res) => {
 };
 
 const checkBrokenCarPartsHasBeenConfirmed = async (req, res, next) => {
+    console.log("Call checkBrokenCarPartsHasBeenConfirmed");
     const { idSchedule } = req.body;
     let data = { ...Constants.ResultData };
     const sql = `SELECT * FROM schedule WHERE idSchedule = ?`;
@@ -158,19 +159,30 @@ const checkBrokenCarPartsHasBeenConfirmed = async (req, res, next) => {
         } else {
             if (result.length > 0) {
                 if (
-                    helper.isNullOrEmpty(result[0].isCarFailBeforeRun) ||
-                    helper.isNullOrEmpty(result[0].isCarFailAfterRun)
+                    result[0].idScheduleStatus ==
+                        Constants.ScheduleStatusCode.APPROVED ||
+                    result[0].idScheduleStatus ==
+                        Constants.ScheduleStatusCode.MOVING
                 ) {
-                    req.updateIsCarFailBeforeRun = helper.isNullOrEmpty(
-                        result[0].isCarFailBeforeRun
-                    )
-                        ? true
-                        : false;
-                    next();
+                    if (
+                        helper.isNullOrEmpty(result[0].isCarFailBeforeRun) ||
+                        helper.isNullOrEmpty(result[0].isCarFailAfterRun)
+                    ) {
+                        req.updateIsCarFailBeforeRun = helper.isNullOrEmpty(
+                            result[0].isCarFailBeforeRun
+                        )
+                            ? true
+                            : false;
+                        next();
+                    } else {
+                        data.status = Constants.ApiCode.BAD_REQUEST;
+                        data.message =
+                            Strings.Common.CAR_STATUS_HAS_BEEN_UPDATED_BEFORE;
+                        res.status(200).send(data);
+                    }
                 } else {
                     data.status = Constants.ApiCode.BAD_REQUEST;
-                    data.message =
-                        Strings.Common.CAR_STATUS_HAS_BEEN_UPDATED_BEFORE;
+                    data.message = Strings.Common.CURRENTLY_UNABLE_TO_UPDATE;
                     res.status(200).send(data);
                 }
             } else {
@@ -187,19 +199,21 @@ const validateDataToConfirmReceivedOrCompleteOfSchedule = async (
     res,
     next
 ) => {
-    const { isCarBroken, arrayIdBrokenCarParts, arrayComment } = req.body;
+    console.log("Call validateDataToConfirmReceivedOrCompleteOfSchedule");
+
+    const { isCarBroken, arrayIdCarParts, arrayComment } = req.body;
     let data = { ...Constants.ResultData };
 
-    if (isCarBroken) {
+    if (helper.convertStringBooleanToBoolean(isCarBroken)) {
         if (
-            helper.isArray(arrayIdBrokenCarParts) &&
+            helper.isArray(arrayIdCarParts) &&
             helper.isArray(arrayComment) &&
-            !helper.isArrayEmpty(arrayIdBrokenCarParts) &&
+            !helper.isArrayEmpty(arrayIdCarParts) &&
             !helper.isArrayEmpty(arrayComment) &&
             !helper.isArrayEmpty(req.files)
         ) {
             if (
-                arrayIdBrokenCarParts.length == arrayComment.length &&
+                arrayIdCarParts.length == arrayComment.length &&
                 arrayComment.length == req.files.length
             ) {
                 next();
@@ -219,64 +233,49 @@ const validateDataToConfirmReceivedOrCompleteOfSchedule = async (
 };
 
 const confirmReceivedOrCompleteOfSchedule = async (req, res, next) => {
-    const { idSchedule, isCarBroken, arrayIdBrokenCarParts, arrayComment } =
-        req.body;
+    console.log("Call confirmReceivedOrCompleteOfSchedule");
+
+    const { idSchedule, isCarBroken, arrayIdCarParts, arrayComment } = req.body;
     let data = { ...Constants.ResultData };
 
     if (req.userToken) {
         // BROKEN CAR PARTS
-        if (isCarBroken) {
-            let sql = "";
-            if (req.updateIsCarFailBeforeRun) {
-                sql = `UPDATE schedule SET isCarFailBeforeRun= ?, idScheduleStatus= ${Constants.ScheduleStatusCode.RECEIVED} WHERE idSchedule = ?`;
-            } else {
-                sql = `UPDATE schedule SET isCarFailAfterRun= ?, idScheduleStatus= ${Constants.ScheduleStatusCode.RECEIVED} WHERE idSchedule = ?`;
-            }
-            db.query(sql, [1, idSchedule], (err, result) => {
-                if (err) {
-                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-                    data.message = Strings.Common.ERROR;
-                    res.status(200).send(data);
-                } else {
-                    if (result.changedRows > 0) {
-                        data.status = Constants.ApiCode.OK;
-                        data.message = Strings.Common.SUCCESS;
-                        res.status(200).send(data);
-                        next()
-                    } else {
-                        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-                        data.message = Strings.Common.ERROR;
-                        res.status(200).send(data);
-                    }
-                }
-            });
+        let sql = "";
+        const idUser = req.userToken.idUser;
+        let isCarFail = helper.convertStringBooleanToBoolean(isCarBroken)
+            ? 1
+            : 0;
+        const currentDate = helper.formatTimeStamp(new Date().getTime());
+        let scheduleStatusCode = null;
+        // UPDATE CAR FAIL BEFORE RUN
+        if (req.updateIsCarFailBeforeRun) {
+            scheduleStatusCode = Constants.ScheduleStatusCode.RECEIVED;
+            sql = `UPDATE schedule SET isCarFailBeforeRun= ?, idScheduleStatus= ?, idUserLastUpdated= ?, updatedAt= ? WHERE idSchedule = ?`;
         }
-        // NOT BROKEN CAR PARTS
+        // UPDATE CAR FAIL AFTER RUN
         else {
-            let sql = "";
-            if (req.updateIsCarFailBeforeRun) {
-                sql = `UPDATE schedule SET isCarFailBeforeRun= ?, idScheduleStatus= ${Constants.ScheduleStatusCode.RECEIVED} WHERE idSchedule = ?`;
-            } else {
-                sql = `UPDATE schedule SET isCarFailAfterRun= ?, idScheduleStatus= ${Constants.ScheduleStatusCode.RECEIVED} WHERE idSchedule = ?`;
-            }
-            db.query(sql, [0, idSchedule], (err, result) => {
+            scheduleStatusCode = Constants.ScheduleStatusCode.COMPLETE;
+            sql = `UPDATE schedule SET isCarFailAfterRun= ?, idScheduleStatus= ?, idUserLastUpdated= ?, updatedAt= ? WHERE idSchedule = ?`;
+        }
+        db.query(
+            sql,
+            [isCarFail, scheduleStatusCode, idUser, currentDate, idSchedule],
+            (err, result) => {
                 if (err) {
                     data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
                     data.message = Strings.Common.ERROR;
                     res.status(200).send(data);
                 } else {
                     if (result.changedRows > 0) {
-                        data.status = Constants.ApiCode.OK;
-                        data.message = Strings.Common.SUCCESS;
-                        res.status(200).send(data);
+                        next();
                     } else {
                         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
                         data.message = Strings.Common.ERROR;
                         res.status(200).send(data);
                     }
                 }
-            });
-        }
+            }
+        );
     } else {
         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
         data.message = Strings.Common.USER_NOT_EXIST;
@@ -284,13 +283,92 @@ const confirmReceivedOrCompleteOfSchedule = async (req, res, next) => {
     }
 };
 
-const createBrokenCarParts = async (req, res, next) => {
-    const { idSchedule, isCarBroken, arrayIdBrokenCarParts, arrayComment } =
-        req.body;
+const createBrokenCarParts = async (req, res) => {
+    console.log("Call createBrokenCarParts");
+
+    const { idSchedule, isCarBroken, arrayIdCarParts, arrayComment } = req.body;
     let data = { ...Constants.ResultData };
 
     if (req.userToken) {
-        
+        if (helper.convertStringBooleanToBoolean(isCarBroken)) {
+            if (
+                helper.isArray(arrayIdCarParts) &&
+                helper.isArray(arrayComment)
+            ) {
+                if (
+                    req.arrayUrlImagesFirebase.length == arrayIdCarParts.length &&
+                    arrayIdCarParts.length == arrayComment.length
+                ) {
+                    const idUser = req.userToken.idUser;
+                    const isReceiveCar = req.updateIsCarFailBeforeRun ? 1 : 0;
+                    const currentDate = helper.formatTimeStamp(
+                        new Date().getTime()
+                    );
+                    const sql = `INSERT INTO broken_car_parts(image, comment, isReceiveCar, createdAt, idSchedule, idCarParts, idUserCreated) VALUES ?`;
+                    // FORMAT DATA
+                    let arrayData = [];
+                    for (let i = 0; i < arrayIdCarParts.length; i++) {
+                        let arr = [
+                            req.arrayUrlImagesFirebase[i],
+                            arrayComment[i],
+                            isReceiveCar,
+                            currentDate,
+                            idSchedule,
+                            arrayIdCarParts[i],
+                            idUser,
+                        ];
+                        arrayData.push(arr);
+                    }
+                    db.beginTransaction(function (err) {
+                        if (err) {
+                            data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                            data.message = Strings.Common.ERROR;
+                            res.status(200).send(data);
+                        }
+                        db.query(sql, [arrayData], function (error, results) {
+                            if (error) {
+                                return db.rollback(function () {
+                                    data.status =
+                                        Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                                    data.message = Strings.Common.ERROR;
+                                    res.status(200).send(data);
+                                });
+                            } else {
+                                if (results.affectedRows > 0) {
+                                    db.commit(function (err) {
+                                        if (err) {
+                                            return db.rollback(function () {
+                                                data.status =
+                                                    Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                                                data.message = Strings.Common.ERROR;
+                                                res.status(200).send(data);
+                                            });
+                                        } else {
+                                            data.status = Constants.ApiCode.OK;
+                                            data.message = Strings.Common.SUCCESS;
+                                            res.status(200).send(data);
+                                        }
+                                    });
+                                } else {
+                                    data.status =
+                                        Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                                    data.message = Strings.Common.ERROR;
+                                    res.status(200).send(data);
+                                }
+                            }
+                        });
+                    });
+                }
+            }else{
+                data.status = Constants.ApiCode.BAD_REQUEST;
+                data.message = Strings.Common.INVALID_DATA;
+                res.status(200).send(data);
+            }
+        } else {
+            data.status = Constants.ApiCode.OK;
+            data.message = Strings.Common.SUCCESS;
+            res.status(200).send(data);
+        }
     } else {
         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
         data.message = Strings.Common.USER_NOT_EXIST;
@@ -303,5 +381,5 @@ module.exports = {
     validateDataToConfirmReceivedOrCompleteOfSchedule,
     checkBrokenCarPartsHasBeenConfirmed,
     confirmReceivedOrCompleteOfSchedule,
-    createBrokenCarParts
+    createBrokenCarParts,
 };
