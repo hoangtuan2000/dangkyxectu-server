@@ -237,11 +237,14 @@ const updatePhoneNumberUserInSchedule = async (req, res) => {
 
     if (req.userToken) {
         if (helper.isValidPhoneNumber(phoneUser)) {
-            let sql = `UPDATE schedule SET phoneUser=?, updatedAt=? WHERE idSchedule = ?`;
+            let sql = `UPDATE schedule SET phoneUser=? , updatedAt=? , idUserLastUpdated=? WHERE idSchedule=? 
+            AND idScheduleStatus IN (${Constants.ScheduleStatusCode.PENDING}, ${Constants.ScheduleStatusCode.APPROVED}, ${Constants.ScheduleStatusCode.RECEIVED}) 
+            AND DATE(FROM_UNIXTIME(startDate)) >= CURRENT_DATE()`;
             let currentDate = helper.formatTimeStamp(new Date().getTime());
+            const idUser = req.userToken.idUser;
             db.query(
                 sql,
-                [phoneUser, currentDate, idSchedule],
+                [phoneUser, currentDate, idUser, idSchedule],
                 (err, result) => {
                     if (err) {
                         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
@@ -265,7 +268,7 @@ const updatePhoneNumberUserInSchedule = async (req, res) => {
                         } else {
                             data.status =
                                 Constants.ApiCode.INTERNAL_SERVER_ERROR;
-                            data.message = Strings.Common.ERROR_SERVER;
+                            data.message = Strings.Common.CURRENTLY_UNABLE_TO_UPDATE;
                             res.status(200).send(data);
                         }
                     }
