@@ -20,6 +20,11 @@ const Strings = {
         INVALID_DATA: "Dữ Liệu Không Hợp Lệ",
         SIGN_UP_SUCCESS: "Đăng Ký Thành Công",
         UPDATE_SUCCESS: "Cập Nhật Thành Công",
+        UPDATE_INFO_SCHEDULE_SUCCESS:
+            "Cập Nhật Thông Tin Lịch Trình Thành Công",
+        SCHEDULE_HAS_BEEN_APPROVED: "Lịch Trình Đã Được Phê Duyệt",
+        SCHEDULE_HAS_BEEN_REFUSED: "Lịch Trình Đã Bị Từ Chối",
+        CHANGED_DRIVER: "Đã Thay Đổi Tài Xế",
         UPDATE_PHONE_NUMBER_SUCCESS: "Cập Nhật Số Điện Thoại Thành Công",
         SCHEDULE_HAS_BEEN_RECEIVED: "Lịch Trình Đã Được Nhận",
         COMPLETE_SCHEDULE: "Hoàn Thành Lịch Trình",

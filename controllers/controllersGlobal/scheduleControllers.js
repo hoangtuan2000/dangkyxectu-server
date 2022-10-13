@@ -119,7 +119,8 @@ const checkScheduleDuplication = async (req, res, next) => {
                         DATE(FROM_UNIXTIME(${endTimeStamp})) as EndSend
                     FROM schedule 
                     WHERE 
-                        idCar = ${idCar} AND idScheduleStatus = 2 AND (( DATE(FROM_UNIXTIME(?)) BETWEEN DATE(FROM_UNIXTIME(startDate)) AND DATE(FROM_UNIXTIME(endDate))) 
+                        idCar = ${idCar} AND idScheduleStatus IN (${Constants.ScheduleStatusCode.APPROVED}, ${Constants.ScheduleStatusCode.RECEIVED}, ${Constants.ScheduleStatusCode.MOVING}) 
+                        AND (( DATE(FROM_UNIXTIME(?)) BETWEEN DATE(FROM_UNIXTIME(startDate)) AND DATE(FROM_UNIXTIME(endDate))) 
                         OR ( DATE(FROM_UNIXTIME(?)) BETWEEN DATE(FROM_UNIXTIME(startDate)) AND DATE(FROM_UNIXTIME(endDate))) 
                         OR (DATE(FROM_UNIXTIME(startDate)) BETWEEN DATE(FROM_UNIXTIME(${startTimeStamp})) AND DATE(FROM_UNIXTIME(${endTimeStamp}))) 
                         OR (DATE(FROM_UNIXTIME(endDate)) BETWEEN DATE(FROM_UNIXTIME(${startTimeStamp})) AND DATE(FROM_UNIXTIME(${endTimeStamp}))))`;
@@ -134,7 +135,8 @@ const checkScheduleDuplication = async (req, res, next) => {
                         DATE(FROM_UNIXTIME(${endTimeStamp})) as EndSend
                     FROM schedule 
                     WHERE 
-                        idSchedule != ${idSchedule} AND idCar = ${idCar} AND idScheduleStatus = 2 AND (( DATE(FROM_UNIXTIME(?)) BETWEEN DATE(FROM_UNIXTIME(startDate)) AND DATE(FROM_UNIXTIME(endDate))) 
+                        idSchedule != ${idSchedule} AND idCar = ${idCar} AND idScheduleStatus IN (${Constants.ScheduleStatusCode.APPROVED}, ${Constants.ScheduleStatusCode.RECEIVED}, ${Constants.ScheduleStatusCode.MOVING}) 
+                        AND (( DATE(FROM_UNIXTIME(?)) BETWEEN DATE(FROM_UNIXTIME(startDate)) AND DATE(FROM_UNIXTIME(endDate))) 
                         OR ( DATE(FROM_UNIXTIME(?)) BETWEEN DATE(FROM_UNIXTIME(startDate)) AND DATE(FROM_UNIXTIME(endDate))) 
                         OR (DATE(FROM_UNIXTIME(startDate)) BETWEEN DATE(FROM_UNIXTIME(${startTimeStamp})) AND DATE(FROM_UNIXTIME(${endTimeStamp}))) 
                         OR (DATE(FROM_UNIXTIME(endDate)) BETWEEN DATE(FROM_UNIXTIME(${startTimeStamp})) AND DATE(FROM_UNIXTIME(${endTimeStamp}))))`;
@@ -289,6 +291,7 @@ const getScheduleToSendEmail = (
     titleEmail,
     colorTitleEmail
 ) => {
+    console.log("call EMAIL getScheduleToSendEmail");
     const sql = `SELECT 
                     ca.idCar, ca.image, ca.licensePlates, 
                     ct.name as carType, ct.seatNumber,

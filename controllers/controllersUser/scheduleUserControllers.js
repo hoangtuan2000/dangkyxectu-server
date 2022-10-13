@@ -373,7 +373,7 @@ const updateSchedulePending = async (req, res) => {
             const email = req.userToken.email;
             const sql = `UPDATE schedule SET startDate =?, endDate =?, startLocation =?, endLocation =?, 
                         reason =?, note =?, phoneUser =?, updatedAt =?, idWardStartLocation =?, 
-                        idWardEndLocation =? WHERE idSchedule =? AND idScheduleStatus = 1`;
+                        idWardEndLocation =?, idUserLastUpdated=? WHERE idSchedule =? AND idScheduleStatus = ${Constants.ScheduleStatusCode.PENDING}`;
 
             const currentDate = helper.formatTimeStamp(new Date().getTime());
 
@@ -388,6 +388,7 @@ const updateSchedulePending = async (req, res) => {
                 currentDate,
                 idWardStartLocation,
                 idWardEndLocation,
+                idUser,
                 idSchedule,
             ];
 
@@ -406,7 +407,7 @@ const updateSchedulePending = async (req, res) => {
                         getScheduleToSendEmail(
                             idSchedule,
                             null,
-                            Strings.Common.UPDATE_SUCCESS,
+                            Strings.Common.UPDATE_INFO_SCHEDULE_SUCCESS,
                             Constants.Styles.COLOR_PRIMARY
                         );
                     } else {

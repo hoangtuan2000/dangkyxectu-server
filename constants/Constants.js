@@ -81,6 +81,11 @@ const Constants = {
         NOT_EXPIRES: 0,
     },
 
+    UserStatusCode: {
+        WORKING: 1,
+        NOT_WORKING: 2,
+    },
+
     // NameBrokenCarParts: {
     //     FRONT_OF_CAR: "frontOfCar",
     //     BACK_OF_CAR: "backOfCar",

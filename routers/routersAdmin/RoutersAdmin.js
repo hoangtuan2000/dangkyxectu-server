@@ -24,9 +24,21 @@ router.post(
 );
 
 router.post(
-    "/updateSchedule",
+    "/updateSchedulePending",
     authenticationControllers.authenticationAdmin,
-    scheduleAdminControllers.updateSchedule
+    scheduleAdminControllers.updateSchedulePending
+);
+
+router.post(
+    "/updateScheduleApproved",
+    authenticationControllers.authenticationAdmin,
+    scheduleAdminControllers.updateScheduleApproved
+);
+
+router.post(
+    "/getCarListToChangeCar",
+    authenticationControllers.authenticationAdmin,
+    scheduleAdminControllers.getCarListToChangeCar
 );
 
 // CAR ADMIN

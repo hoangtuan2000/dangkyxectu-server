@@ -397,6 +397,84 @@ const createBrokenCarParts = async (req, res) => {
 };
 
 // UPDATE MOVING SCHEDULE
+// const confirmMoving = async (req, res) => {
+//     console.log("Call Driver confirmMoving");
+
+//     const { idSchedule } = req.body;
+//     let data = { ...Constants.ResultData };
+
+//     if (req.userToken) {
+//         // CHECK SCHEDULE STATUS BEFORE UPDATE SCHEDULE STATUS MOVING
+//         const sqlCheck = `SELECT * FROM schedule WHERE idSchedule = ?`;
+//         const resultCheck = await executeQuery(db, sqlCheck, idSchedule);
+//         if (!resultCheck) {
+//             data.status = Constants.ApiCode.BAD_REQUEST;
+//             data.message = Strings.Common.ERROR_GET_DATA;
+//             res.status(200).send(data);
+//         } else {
+//             if (resultCheck.length > 0) {
+//                 if (
+//                     resultCheck[0].idScheduleStatus ==
+//                     Constants.ScheduleStatusCode.RECEIVED
+//                 ) {
+//                     // UPDATE SCHEDULE STATUS MOVING
+//                     const idUser = req.userToken.idUser;
+//                     const currentDate = helper.formatTimeStamp(
+//                         new Date().getTime()
+//                     );
+//                     const sql = `UPDATE schedule SET updatedAt= ?, idUserLastUpdated= ?, idScheduleStatus= ? WHERE idSchedule = ?`;
+//                     db.query(
+//                         sql,
+//                         [
+//                             currentDate,
+//                             idUser,
+//                             Constants.ScheduleStatusCode.MOVING,
+//                             idSchedule,
+//                         ],
+//                         (err, result) => {
+//                             if (err) {
+//                                 data.status =
+//                                     Constants.ApiCode.INTERNAL_SERVER_ERROR;
+//                                 data.message = Strings.Common.ERROR;
+//                                 res.status(200).send(data);
+//                             } else {
+//                                 if (result.changedRows > 0) {
+//                                     getScheduleToSendEmail(
+//                                         idSchedule,
+//                                         null,
+//                                         Strings.Common.MOVING,
+//                                         Constants.Styles.COLOR_YELLOW_GREEN
+//                                     );
+//                                     data.status = Constants.ApiCode.OK;
+//                                     data.message = Strings.Common.SUCCESS;
+//                                     res.status(200).send(data);
+//                                 } else {
+//                                     data.status =
+//                                         Constants.ApiCode.INTERNAL_SERVER_ERROR;
+//                                     data.message = Strings.Common.ERROR;
+//                                     res.status(200).send(data);
+//                                 }
+//                             }
+//                         }
+//                     );
+//                 } else {
+//                     data.status = Constants.ApiCode.BAD_REQUEST;
+//                     data.message = Strings.Common.CURRENTLY_UNABLE_TO_UPDATE;
+//                     res.status(200).send(data);
+//                 }
+//             } else {
+//                 data.status = Constants.ApiCode.BAD_REQUEST;
+//                 data.message = Strings.Common.ERROR_GET_DATA;
+//                 res.status(200).send(data);
+//             }
+//         }
+//     } else {
+//         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+//         data.message = Strings.Common.USER_NOT_EXIST;
+//         res.status(200).send(data);
+//     }
+// };
+
 const confirmMoving = async (req, res) => {
     console.log("Call Driver confirmMoving");
 
@@ -404,70 +482,42 @@ const confirmMoving = async (req, res) => {
     let data = { ...Constants.ResultData };
 
     if (req.userToken) {
-        // CHECK SCHEDULE STATUS BEFORE UPDATE SCHEDULE STATUS MOVING
-        const sqlCheck = `SELECT * FROM schedule WHERE idSchedule = ?`;
-        const resultCheck = await executeQuery(db, sqlCheck, idSchedule);
-        if (!resultCheck) {
-            data.status = Constants.ApiCode.BAD_REQUEST;
-            data.message = Strings.Common.ERROR_GET_DATA;
-            res.status(200).send(data);
-        } else {
-            if (resultCheck.length > 0) {
-                if (
-                    resultCheck[0].idScheduleStatus ==
-                    Constants.ScheduleStatusCode.RECEIVED
-                ) {
-                    // UPDATE SCHEDULE STATUS MOVING
-                    const idUser = req.userToken.idUser;
-                    const currentDate = helper.formatTimeStamp(
-                        new Date().getTime()
-                    );
-                    const sql = `UPDATE schedule SET updatedAt= ?, idUserLastUpdated= ?, idScheduleStatus= ? WHERE idSchedule = ?`;
-                    db.query(
-                        sql,
-                        [
-                            currentDate,
-                            idUser,
-                            Constants.ScheduleStatusCode.MOVING,
-                            idSchedule,
-                        ],
-                        (err, result) => {
-                            if (err) {
-                                data.status =
-                                    Constants.ApiCode.INTERNAL_SERVER_ERROR;
-                                data.message = Strings.Common.ERROR;
-                                res.status(200).send(data);
-                            } else {
-                                if (result.changedRows > 0) {
-                                    getScheduleToSendEmail(
-                                        idSchedule,
-                                        null,
-                                        Strings.Common.MOVING,
-                                        Constants.Styles.COLOR_YELLOW_GREEN
-                                    );
-                                    data.status = Constants.ApiCode.OK;
-                                    data.message = Strings.Common.SUCCESS;
-                                    res.status(200).send(data);
-                                } else {
-                                    data.status =
-                                        Constants.ApiCode.INTERNAL_SERVER_ERROR;
-                                    data.message = Strings.Common.ERROR;
-                                    res.status(200).send(data);
-                                }
-                            }
-                        }
-                    );
-                } else {
-                    data.status = Constants.ApiCode.BAD_REQUEST;
-                    data.message = Strings.Common.CURRENTLY_UNABLE_TO_UPDATE;
+        // UPDATE SCHEDULE STATUS MOVING
+        const idUser = req.userToken.idUser;
+        const currentDate = helper.formatTimeStamp(new Date().getTime());
+        const sql = `UPDATE schedule SET updatedAt= ?, idUserLastUpdated= ?, idScheduleStatus= ? WHERE idSchedule = ? AND idScheduleStatus = ${Constants.ScheduleStatusCode.RECEIVED}`;
+        db.query(
+            sql,
+            [
+                currentDate,
+                idUser,
+                Constants.ScheduleStatusCode.MOVING,
+                idSchedule,
+            ],
+            (err, result) => {
+                if (err) {
+                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                    data.message = Strings.Common.ERROR;
                     res.status(200).send(data);
+                } else {
+                    if (result.changedRows > 0) {
+                        getScheduleToSendEmail(
+                            idSchedule,
+                            null,
+                            Strings.Common.MOVING,
+                            Constants.Styles.COLOR_YELLOW_GREEN
+                        );
+                        data.status = Constants.ApiCode.OK;
+                        data.message = Strings.Common.SUCCESS;
+                        res.status(200).send(data);
+                    } else {
+                        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                        data.message = Strings.Common.CURRENTLY_UNABLE_TO_UPDATE;
+                        res.status(200).send(data);
+                    }
                 }
-            } else {
-                data.status = Constants.ApiCode.BAD_REQUEST;
-                data.message = Strings.Common.ERROR_GET_DATA;
-                res.status(200).send(data);
             }
-        }
+        );
     } else {
         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
         data.message = Strings.Common.USER_NOT_EXIST;

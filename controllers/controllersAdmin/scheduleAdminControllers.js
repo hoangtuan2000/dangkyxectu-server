@@ -3,6 +3,9 @@ const { helper } = require("../../common/helper");
 const { Constants } = require("../../constants/Constants");
 const { Strings } = require("../../constants/Strings");
 const db = require("../../models/index");
+const {
+    getScheduleToSendEmail,
+} = require("../controllersGlobal/scheduleControllers");
 
 const getAdminScheduleStatusListToUpdate = (req, res) => {
     const { idScheduleStatus } = req.body;
@@ -25,7 +28,7 @@ const getAdminScheduleStatusListToUpdate = (req, res) => {
 
     switch (idScheduleStatus) {
         case Constants.ScheduleStatusCode.PENDING:
-            const sql = `SELECT * FROM schedule_status WHERE idScheduleStatus IN (2, 5)`;
+            const sql = `SELECT * FROM schedule_status WHERE idScheduleStatus IN (${Constants.ScheduleStatusCode.APPROVED}, ${Constants.ScheduleStatusCode.REFUSE})`;
             executeSQL(sql);
             break;
         default:
@@ -235,7 +238,7 @@ const getDriverListForSchedule = async (req, res) => {
                 SELECT dr.idUser as idDriver, dr.fullName as fullNameDriver, dr.code as codeDriver
                 FROM user as dr
                 WHERE 
-                    dr.idUserStatus = 1
+                    dr.idUserStatus = ${Constants.UserStatusCode.WORKING}
                     AND DATE(FROM_UNIXTIME(dr.driverLicenseExpirationDate)) > CURRENT_DATE()
                     AND dr.idDriverLicense IN 
                         (SELECT dld.idDriverLicense
@@ -247,7 +250,8 @@ const getDriverListForSchedule = async (req, res) => {
                         WHERE (( DATE(FROM_UNIXTIME(${startTimeStamp})) BETWEEN DATE(FROM_UNIXTIME(sc.startDate)) AND DATE(FROM_UNIXTIME(sc.endDate))) 
                             OR ( DATE(FROM_UNIXTIME(${endTimeStamp})) BETWEEN DATE(FROM_UNIXTIME(sc.startDate)) AND DATE(FROM_UNIXTIME(sc.endDate))) 
                             OR (DATE(FROM_UNIXTIME(sc.startDate)) BETWEEN DATE(FROM_UNIXTIME(${startTimeStamp})) AND DATE(FROM_UNIXTIME(${endTimeStamp}))) 
-                            OR (DATE(FROM_UNIXTIME(sc.endDate)) BETWEEN DATE(FROM_UNIXTIME(${startTimeStamp})) AND DATE(FROM_UNIXTIME(${endTimeStamp})))) AND idScheduleStatus = 2 )`;
+                            OR (DATE(FROM_UNIXTIME(sc.endDate)) BETWEEN DATE(FROM_UNIXTIME(${startTimeStamp})) AND DATE(FROM_UNIXTIME(${endTimeStamp})))) 
+                            AND idScheduleStatus = ${Constants.ScheduleStatusCode.APPROVED} )`;
         db.query(sql, [idCar], (err, result) => {
             if (err) {
                 data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
@@ -267,140 +271,299 @@ const getDriverListForSchedule = async (req, res) => {
     }
 };
 
-const updateSchedule = async (req, res) => {
+// const updateSchedule = async (req, res) => {
+//     let { idSchedule, idScheduleStatus, idDriver } = req.body;
+//     let data = { ...Constants.ResultData };
+
+//     const executeUpdate = (SQL) => {
+//         db.query(SQL, (err, result) => {
+//             if (err) {
+//                 data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+//                 data.message = Strings.Common.ERROR_SERVER;
+//                 res.status(200).send(data);
+//             } else {
+//                 if (result.changedRows > 0) {
+//                     data.status = Constants.ApiCode.OK;
+//                     data.message = Strings.Common.SUCCESS;
+//                     res.status(200).send(data);
+//                 } else {
+//                     data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+//                     data.message = Strings.Common.ERROR_SERVER;
+//                     res.status(200).send(data);
+//                 }
+//             }
+//         });
+//     };
+
+//     if (req.userToken) {
+//         const idAdmin = req.userToken.idUser;
+//         // get schedule status old and date
+//         let sqlExecuteQuery = `SELECT idScheduleStatus, startDate, idDriver FROM schedule WHERE idSchedule = ${idSchedule}`;
+//         const resultExecuteQuery = await executeQuery(db, sqlExecuteQuery);
+
+//         if (!resultExecuteQuery) {
+//             data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+//             data.message = Strings.Common.ERROR_GET_DATA;
+//             res.status(200).send(data);
+//         } else {
+//             const idScheduleStatusOld =
+//                 (resultExecuteQuery &&
+//                     resultExecuteQuery.length > 0 &&
+//                     resultExecuteQuery[0].idScheduleStatus) ||
+//                 null;
+//             const idDriverOld =
+//                 (resultExecuteQuery &&
+//                     resultExecuteQuery.length > 0 &&
+//                     resultExecuteQuery[0].idDriver) ||
+//                 null;
+//             // check data => format SQL
+//             if (
+//                 (idScheduleStatusOld == Constants.ScheduleStatusCode.PENDING &&
+//                     helper.isDateTimeStampGreaterThanCurrentDate(
+//                         resultExecuteQuery[0].startDate
+//                     )) ||
+//                 idScheduleStatusOld == Constants.ScheduleStatusCode.APPROVED
+//             ) {
+//                 let sql = "";
+//                 const currentDate = helper.formatTimeStamp(
+//                     new Date().getTime()
+//                 );
+//                 switch (idScheduleStatusOld) {
+//                     // if idScheduleStatus old is pending => (check startDate < current date)
+//                     case Constants.ScheduleStatusCode.PENDING:
+//                         // check: idScheduleStatus new is approved => update status and driver (check startDate < current date)
+//                         if (
+//                             idScheduleStatus ==
+//                                 Constants.ScheduleStatusCode.APPROVED &&
+//                             idDriver
+//                         ) {
+//                             sql = `UPDATE schedule SET updatedAt=${currentDate}, idAdmin=${idAdmin},
+//                             idDriver=${idDriver}, idScheduleStatus=${idScheduleStatus} WHERE idSchedule = ${idSchedule}`;
+//                             executeUpdate(sql);
+//                         }
+//                         // the updated data is the same as the server data => Old dScheduleStatus = New idScheduleStatus
+//                         else if (
+//                             idScheduleStatus ==
+//                             Constants.ScheduleStatusCode.PENDING
+//                         ) {
+//                             data.status = Constants.ApiCode.BAD_REQUEST;
+//                             data.message = Strings.Common.INVALID_DATA;
+//                             res.status(200).send(data);
+//                         }
+//                         // if idScheduleStatus new not is approved => only update status REFUSE
+//                         else if (
+//                             idScheduleStatus ==
+//                             Constants.ScheduleStatusCode.REFUSE
+//                         ) {
+//                             sql = `UPDATE schedule SET updatedAt=${currentDate}, idAdmin=${idAdmin},
+//                              idScheduleStatus=${idScheduleStatus} WHERE idSchedule = ${idSchedule}`;
+//                             executeUpdate(sql);
+//                         } else {
+//                             data.status = Constants.ApiCode.BAD_REQUEST;
+//                             data.message = Strings.Common.INVALID_DATA;
+//                             res.status(200).send(data);
+//                         }
+//                         break;
+
+//                     // if idScheduleStatus old is approved => update status complete (check startDate >= current date)
+//                     case Constants.ScheduleStatusCode.APPROVED:
+//                         // complete schedule
+//                         if (
+//                             idScheduleStatus ==
+//                                 Constants.ScheduleStatusCode.COMPLETE &&
+//                             !helper.isDateTimeStampGreaterThanCurrentDate(
+//                                 resultExecuteQuery[0].startDate
+//                             )
+//                         ) {
+//                             sql = `UPDATE schedule SET updatedAt=${currentDate}, idAdmin=${idAdmin},
+//                                  idScheduleStatus=${idScheduleStatus} WHERE idSchedule = ${idSchedule}`;
+//                             executeUpdate(sql);
+//                         }
+//                         // UPDATE DRIVER
+//                         else if (
+//                             helper.isDateTimeStampGreaterThanCurrentDate(
+//                                 resultExecuteQuery[0].startDate
+//                             ) &&
+//                             idDriver &&
+//                             idDriver != idDriverOld
+//                         ) {
+//                             sql = `UPDATE schedule SET updatedAt=${currentDate}, idAdmin=${idAdmin},
+//                             idDriver=${idDriver} WHERE idSchedule = ${idSchedule}`;
+//                             executeUpdate(sql);
+//                         } else {
+//                             data.status = Constants.ApiCode.BAD_REQUEST;
+//                             data.message = Strings.Common.INVALID_DATA;
+//                             res.status(200).send(data);
+//                         }
+//                         break;
+//                 }
+//             } else {
+//                 data.status = Constants.ApiCode.BAD_REQUEST;
+//                 data.message = Strings.Common.INVALID_REQUEST;
+//                 res.status(200).send(data);
+//             }
+//         }
+//     } else {
+//         ata.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+//         data.message = Strings.Common.USER_NOT_EXIST;
+//         res.status(200).send(data);
+//     }
+// };
+
+const getCarListToChangeCar = (req, res) => {
+    const { idCar } = req.body;
+    let data = { ...Constants.ResultData };
+
+    if (req.userToken) {
+        const sql = `SELECT * FROM car WHERE idCar != ?`;
+        db.query(sql, idCar, (err, result) => {
+            if (err) {
+                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                data.message = Strings.Common.ERROR;
+                res.status(200).send(data);
+            } else {
+                data.status = Constants.ApiCode.OK;
+                data.message = Strings.Common.SUCCESS;
+                data.data = [...result];
+                res.status(200).send(data);
+            }
+        });
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
+
+const updateSchedulePending = async (req, res) => {
     let { idSchedule, idScheduleStatus, idDriver } = req.body;
     let data = { ...Constants.ResultData };
 
-    const executeUpdate = (SQL) => {
-        db.query(SQL, (err, result) => {
-            if (err) {
-                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-                data.message = Strings.Common.ERROR_SERVER;
-                res.status(200).send(data);
-            } else {
-                if (result.changedRows > 0) {
-                    data.status = Constants.ApiCode.OK;
-                    data.message = Strings.Common.SUCCESS;
-                    res.status(200).send(data);
-                } else {
-                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-                    data.message = Strings.Common.ERROR_SERVER;
-                    res.status(200).send(data);
-                }
-            }
-        });
-    };
-
     if (req.userToken) {
         const idAdmin = req.userToken.idUser;
-        // get schedule status old and date
-        let sqlExecuteQuery = `SELECT idScheduleStatus, startDate, idDriver FROM schedule WHERE idSchedule = ${idSchedule}`;
-        const resultExecuteQuery = await executeQuery(db, sqlExecuteQuery);
+        let currentDate = helper.formatTimeStamp(new Date().getTime());
+        let sql = "";
+        let dataSql = [];
+        let titleEmail = "";
+        let colorTitleEmail = Constants.Styles.COLOR_PRIMARY;
+        // REFUSE SCHEDULE
+        if (idScheduleStatus == Constants.ScheduleStatusCode.REFUSE) {
+            titleEmail = Strings.Common.SCHEDULE_HAS_BEEN_REFUSED;
+            colorTitleEmail = Constants.Styles.COLOR_ERROR;
+            dataSql = [
+                currentDate,
+                idAdmin,
+                idAdmin,
+                idScheduleStatus,
+                idSchedule,
+            ];
+            sql = `UPDATE schedule SET updatedAt=?, idAdmin=?, idUserLastUpdated=?, idScheduleStatus=? 
+                WHERE idSchedule =? AND idScheduleStatus = ${Constants.ScheduleStatusCode.PENDING}  AND DATE(FROM_UNIXTIME(startDate)) > CURRENT_DATE()`;
+        }
+        // APPROVED SCHEDULE
+        else if (
+            idScheduleStatus == Constants.ScheduleStatusCode.APPROVED &&
+            !helper.isNullOrEmpty(idDriver)
+        ) {
+            titleEmail = Strings.Common.SCHEDULE_HAS_BEEN_APPROVED;
+            colorTitleEmail = Constants.Styles.COLOR_SUCCESS;
+            dataSql = [
+                currentDate,
+                idAdmin,
+                idDriver,
+                idAdmin,
+                idScheduleStatus,
+                idSchedule,
+            ];
+            sql = `UPDATE schedule SET updatedAt=?, idAdmin=?, idDriver=?, idUserLastUpdated=?, idScheduleStatus=? 
+            WHERE idSchedule =? AND idScheduleStatus = ${Constants.ScheduleStatusCode.PENDING}  AND DATE(FROM_UNIXTIME(startDate)) > CURRENT_DATE()`;
+        }
 
-        if (!resultExecuteQuery) {
-            data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-            data.message = Strings.Common.ERROR_GET_DATA;
+        if (helper.isNullOrEmpty(sql) || helper.isArrayEmpty(dataSql)) {
+            data.status = Constants.ApiCode.BAD_REQUEST;
+            data.message = Strings.Common.INVALID_REQUEST;
             res.status(200).send(data);
         } else {
-            const idScheduleStatusOld =
-                (resultExecuteQuery &&
-                    resultExecuteQuery.length > 0 &&
-                    resultExecuteQuery[0].idScheduleStatus) ||
-                null;
-            const idDriverOld =
-                (resultExecuteQuery &&
-                    resultExecuteQuery.length > 0 &&
-                    resultExecuteQuery[0].idDriver) ||
-                null;
-            // check data => format SQL
-            if (
-                (idScheduleStatusOld == Constants.ScheduleStatusCode.PENDING &&
-                    helper.isDateTimeStampGreaterThanCurrentDate(
-                        resultExecuteQuery[0].startDate
-                    )) ||
-                idScheduleStatusOld == Constants.ScheduleStatusCode.APPROVED
-            ) {
-                let sql = "";
-                const currentDate = helper.formatTimeStamp(
-                    new Date().getTime()
-                );
-                switch (idScheduleStatusOld) {
-                    // if idScheduleStatus old is pending => (check startDate < current date)
-                    case Constants.ScheduleStatusCode.PENDING:
-                        // check: idScheduleStatus new is approved => update status and driver (check startDate < current date)
-                        if (
-                            idScheduleStatus ==
-                                Constants.ScheduleStatusCode.APPROVED &&
-                            idDriver
-                        ) {
-                            sql = `UPDATE schedule SET updatedAt=${currentDate}, idAdmin=${idAdmin}, 
-                            idDriver=${idDriver}, idScheduleStatus=${idScheduleStatus} WHERE idSchedule = ${idSchedule}`;
-                            executeUpdate(sql);
-                        }
-                        // the updated data is the same as the server data => Old dScheduleStatus = New idScheduleStatus
-                        else if (
-                            idScheduleStatus ==
-                            Constants.ScheduleStatusCode.PENDING
-                        ) {
-                            data.status = Constants.ApiCode.BAD_REQUEST;
-                            data.message = Strings.Common.INVALID_DATA;
-                            res.status(200).send(data);
-                        }
-                        // if idScheduleStatus new not is approved => only update status REFUSE
-                        else if (
-                            idScheduleStatus ==
-                            Constants.ScheduleStatusCode.REFUSE
-                        ) {
-                            sql = `UPDATE schedule SET updatedAt=${currentDate}, idAdmin=${idAdmin}, 
-                             idScheduleStatus=${idScheduleStatus} WHERE idSchedule = ${idSchedule}`;
-                            executeUpdate(sql);
-                        } else {
-                            data.status = Constants.ApiCode.BAD_REQUEST;
-                            data.message = Strings.Common.INVALID_DATA;
-                            res.status(200).send(data);
-                        }
-                        break;
-
-                    // if idScheduleStatus old is approved => update status complete (check startDate >= current date)
-                    case Constants.ScheduleStatusCode.APPROVED:
-                        // complete schedule
-                        if (
-                            idScheduleStatus ==
-                                Constants.ScheduleStatusCode.COMPLETE &&
-                            !helper.isDateTimeStampGreaterThanCurrentDate(
-                                resultExecuteQuery[0].startDate
-                            )
-                        ) {
-                            sql = `UPDATE schedule SET updatedAt=${currentDate}, idAdmin=${idAdmin}, 
-                                 idScheduleStatus=${idScheduleStatus} WHERE idSchedule = ${idSchedule}`;
-                            executeUpdate(sql);
-                        } 
-                        // UPDATE DRIVER
-                        else if (
-                            helper.isDateTimeStampGreaterThanCurrentDate(
-                                resultExecuteQuery[0].startDate
-                            ) &&
-                            idDriver &&
-                            idDriver != idDriverOld
-                        ) {
-                            sql = `UPDATE schedule SET updatedAt=${currentDate}, idAdmin=${idAdmin}, 
-                            idDriver=${idDriver} WHERE idSchedule = ${idSchedule}`;
-                            executeUpdate(sql);
-                        } else {
-                            data.status = Constants.ApiCode.BAD_REQUEST;
-                            data.message = Strings.Common.INVALID_DATA;
-                            res.status(200).send(data);
-                        }
-                        break;
+            db.query(sql, [...dataSql], (err, result) => {
+                if (err) {
+                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                    data.message = Strings.Common.ERROR;
+                    res.status(200).send(data);
+                } else {
+                    if (result.changedRows > 0) {
+                        data.status = Constants.ApiCode.OK;
+                        data.message = Strings.Common.SUCCESS;
+                        res.status(200).send(data);
+                        // call getScheduleToSendEmail function
+                        getScheduleToSendEmail(
+                            idSchedule,
+                            null,
+                            titleEmail,
+                            colorTitleEmail
+                        );
+                    } else {
+                        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                        data.message =
+                            Strings.Common.CURRENTLY_CANNOT_CANCEL_SCHEDULE;
+                        res.status(200).send(data);
+                    }
                 }
-            } else {
-                data.status = Constants.ApiCode.BAD_REQUEST;
-                data.message = Strings.Common.INVALID_REQUEST;
-                res.status(200).send(data);
-            }
+            });
         }
     } else {
-        ata.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
+
+const updateScheduleApproved = async (req, res) => {
+    let { idSchedule, idDriver } = req.body;
+    let data = { ...Constants.ResultData };
+
+    if (req.userToken) {
+        if (helper.isNullOrEmpty(idDriver)) {
+            data.status = Constants.ApiCode.BAD_REQUEST;
+            data.message = Strings.Common.NOT_ENOUGH_DATA;
+            res.status(200).send(data);
+        } else {
+            const idAdmin = req.userToken.idUser;
+            let currentDate = helper.formatTimeStamp(new Date().getTime());
+            let sql = `UPDATE schedule SET updatedAt=?, idDriver=?, idUserLastUpdated=? WHERE idSchedule =? AND idScheduleStatus = ${Constants.ScheduleStatusCode.APPROVED}
+                AND DATE(FROM_UNIXTIME(startDate)) >= CURRENT_DATE()`;
+            db.query(
+                sql,
+                [currentDate, idDriver, idAdmin, idSchedule],
+                (err, result) => {
+                    if (err) {
+                        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                        data.message = Strings.Common.ERROR;
+                        res.status(200).send(data);
+                    } else {
+                        if (result.changedRows > 0) {
+                            data.status = Constants.ApiCode.OK;
+                            data.message = Strings.Common.SUCCESS;
+                            res.status(200).send(data);
+                            // call getScheduleToSendEmail function
+                            getScheduleToSendEmail(
+                                idSchedule,
+                                null,
+                                Strings.Common.CHANGED_DRIVER,
+                                Constants.Styles.COLOR_PRIMARY
+                            );
+                        } else {
+                            data.status =
+                                Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                            data.message =
+                                Strings.Common.CURRENTLY_UNABLE_TO_UPDATE;
+                            res.status(200).send(data);
+                        }
+                    }
+                }
+            );
+        }
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
         data.message = Strings.Common.USER_NOT_EXIST;
         res.status(200).send(data);
     }
@@ -410,5 +573,7 @@ module.exports = {
     getAdminScheduleList,
     getDriverListForSchedule,
     getAdminScheduleStatusListToUpdate,
-    updateSchedule,
+    updateSchedulePending,
+    updateScheduleApproved,
+    getCarListToChangeCar,
 };
