@@ -100,6 +100,7 @@ const Constants = {
         COLOR_PINK_LIGHT: "#ce93d8",
         COLOR_BLUE_LIGHT: "#29b6f6",
         COLOR_BLUE_GREEN: "#03a882",
+        COLOR_YELLOW_GREEN: "#ab8e00",
     },
 };
 

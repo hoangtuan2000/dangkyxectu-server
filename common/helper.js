@@ -107,12 +107,12 @@ const helper = {
         return stringBoolean == "true";
     },
 
-    // isDateTimeStampGreaterThanOrEqualCurrentDate: (timeStamp) => {
-    //     return (
-    //         new Date(new Date(timeStamp * 1000).toDateString()) >=
-    //         new Date(new Date().toDateString())
-    //     );
-    // },
+    isDateTimeStampGreaterThanOrEqualCurrentDate: (timeStamp) => {
+        return (
+            new Date(new Date(timeStamp * 1000).toDateString()) >=
+            new Date(new Date().toDateString())
+        );
+    },
 };
 
 module.exports = {

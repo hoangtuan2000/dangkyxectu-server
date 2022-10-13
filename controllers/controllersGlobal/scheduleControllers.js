@@ -191,7 +191,12 @@ const createSchedule = async (req, res) => {
         const startTimeStamp = helper.formatTimeStamp(startDate);
         const endTimeStamp = helper.formatTimeStamp(endDate);
 
-        if (helper.isStartTimeStampLessThanOrEqualEndTimeStamp(startTimeStamp, endTimeStamp)) {
+        if (
+            helper.isStartTimeStampLessThanOrEqualEndTimeStamp(
+                startTimeStamp,
+                endTimeStamp
+            )
+        ) {
             const idUser = req.userToken.idUser;
             const email = req.userToken.email;
             const sql = `INSERT INTO schedule
@@ -251,7 +256,6 @@ const createSchedule = async (req, res) => {
                                         getScheduleToSendEmail(
                                             results.insertId,
                                             email,
-                                            idUser,
                                             Strings.Common.SIGN_UP_SUCCESS,
                                             Constants.Styles.COLOR_PRIMARY
                                         );
@@ -282,7 +286,6 @@ const createSchedule = async (req, res) => {
 const getScheduleToSendEmail = (
     idSchedule,
     email,
-    idUser,
     titleEmail,
     colorTitleEmail
 ) => {
@@ -293,13 +296,13 @@ const getScheduleToSendEmail = (
                     sc.idSchedule, sc.startDate, sc.reason, sc.phoneUser, sc.endDate, sc.startLocation, sc.endLocation, sc.createdAt, sc.updatedAt,
                     ws.name as wardStart, ds.name as districtStart, ps.name as provinceStart,
                     we.name as wardEnd, de.name as districtEnd, pe.name as provinceEnd,
-                    us.fullName as fullNameUser,
+                    us.fullName as fullNameUser, us.email as emailUser,
                     dr.fullName as fullNameDriver, dr.phone as phoneDriver
                 FROM car as ca 
                 LEFT JOIN schedule as sc ON ca.idCar = sc.idCar
                 LEFT JOIN car_type as ct ON ca.idCarType = ct.idCarType
                 LEFT JOIN schedule_status as ss ON sc.idScheduleStatus = ss.idScheduleStatus
-                LEFT JOIN user as us ON us.idUser = ? AND us.idUser = sc.idUser
+                LEFT JOIN user as us ON us.idUser = sc.idUser
                 LEFT JOIN user as dr ON dr.idUser = sc.idDriver
                 LEFT JOIN ward as ws ON ws.idWard = sc.idWardStartLocation
                 LEFT JOIN district as ds ON ws.idDistrict = ds.idDistrict
@@ -308,7 +311,7 @@ const getScheduleToSendEmail = (
                 LEFT JOIN district as de ON we.idDistrict = de.idDistrict
                 LEFT JOIN province as pe ON de.idProvince = pe.idProvince
                 WHERE sc.idSchedule = ?`;
-    db.query(sql, [idUser, idSchedule], (err, result) => {
+    db.query(sql, idSchedule, (err, result) => {
         if (err) {
             console.log("Cannot send email err getScheduleToSendEmail", err);
         } else {
@@ -333,12 +336,15 @@ const getScheduleToSendEmail = (
                             Constants.Styles.COLOR_SECONDARY;
                         break;
                     case Constants.ScheduleStatus.REFUSE:
-                        colorTextScheduleStatus =
-                            Constants.Styles.COLOR_ERROR;
+                        colorTextScheduleStatus = Constants.Styles.COLOR_ERROR;
                         break;
                     case Constants.ScheduleStatus.RECEIVED:
                         colorTextScheduleStatus =
                             Constants.Styles.COLOR_BLUE_GREEN;
+                        break;
+                    case Constants.ScheduleStatus.MOVING:
+                        colorTextScheduleStatus =
+                            Constants.Styles.COLOR_YELLOW_GREEN;
                         break;
                 }
                 const startDate = new Date(
@@ -349,16 +355,17 @@ const getScheduleToSendEmail = (
                 ).toLocaleDateString("en-GB");
                 const createdAt = new Date(
                     parseInt(result.createdAt) * 1000
-                ).toLocaleString('en-GB')
+                ).toLocaleString("en-GB");
                 const updatedAt =
                     parseInt(result.updatedAt) > 0 &&
-                    new Date(
-                        parseInt(result.updatedAt) * 1000
-                    ).toLocaleString('en-GB')
+                    new Date(parseInt(result.updatedAt) * 1000).toLocaleString(
+                        "en-GB"
+                    );
                 const startLocation = `${result.startLocation} - ${result.wardStart} - ${result.districtStart} - ${result.provinceStart}`;
                 const endLocation = `${result.endLocation} - ${result.wardEnd} - ${result.districtEnd} - ${result.provinceEnd}`;
+                const sendEmailAddress = email ? email : result.emailUser;
                 sendEmailCreateOrUpdateSchedule(
-                    email,
+                    sendEmailAddress,
                     `Đăng Ký ${result.carType} ${result.seatNumber} Chổ ( Số: ${idSchedule} )`,
                     null,
                     result.image,

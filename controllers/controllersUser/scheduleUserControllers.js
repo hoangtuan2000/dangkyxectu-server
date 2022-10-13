@@ -258,8 +258,7 @@ const updatePhoneNumberUserInSchedule = async (req, res) => {
                             const email = req.userToken.email;
                             getScheduleToSendEmail(
                                 idSchedule,
-                                email,
-                                idUser,
+                                null,
                                 Strings.Common.UPDATE_PHONE_NUMBER_SUCCESS,
                                 Constants.Styles.COLOR_PRIMARY
                             );
@@ -290,8 +289,9 @@ const cancelSchedule = async (req, res) => {
     let data = { ...Constants.ResultData };
 
     if (req.userToken) {
-        let sql = `UPDATE schedule SET updatedAt=?, idScheduleStatus=? WHERE idSchedule = ? AND 
-                    (idScheduleStatus = 1 OR idScheduleStatus = 2) AND DATE(FROM_UNIXTIME(startDate)) > CURRENT_DATE()`;
+        let sql = `UPDATE schedule SET updatedAt=?, idScheduleStatus=? WHERE idSchedule = ? 
+            AND idScheduleStatus IN (${Constants.ScheduleStatusCode.PENDING}, ${Constants.ScheduleStatusCode.APPROVED}, ${Constants.ScheduleStatusCode.RECEIVED}) 
+            AND DATE(FROM_UNIXTIME(startDate)) >= CURRENT_DATE()`;
         let currentDate = helper.formatTimeStamp(new Date().getTime());
         let scheduleStatusCode = Constants.ScheduleStatusCode.CANCELLED;
         db.query(
@@ -307,20 +307,17 @@ const cancelSchedule = async (req, res) => {
                         data.status = Constants.ApiCode.OK;
                         data.message = Strings.Common.SUCCESS;
                         res.status(200).send(data);
-
                         // call getScheduleToSendEmail function
-                        const idUser = req.userToken.idUser;
-                        const email = req.userToken.email;
                         getScheduleToSendEmail(
                             idSchedule,
-                            email,
-                            idUser,
+                            null,
                             Strings.Common.CANCEL_SUCCESSFUL_REGISTRATION,
                             Constants.Styles.COLOR_ERROR
                         );
                     } else {
                         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-                        data.message = Strings.Common.ERROR_SERVER;
+                        data.message =
+                            Strings.Common.CURRENTLY_CANNOT_CANCEL_SCHEDULE;
                         res.status(200).send(data);
                     }
                 }
@@ -362,7 +359,12 @@ const updateSchedulePending = async (req, res) => {
         const startTimeStamp = helper.formatTimeStamp(startDate);
         const endTimeStamp = helper.formatTimeStamp(endDate);
 
-        if (helper.isStartTimeStampLessThanOrEqualEndTimeStamp(startTimeStamp, endTimeStamp)) {
+        if (
+            helper.isStartTimeStampLessThanOrEqualEndTimeStamp(
+                startTimeStamp,
+                endTimeStamp
+            )
+        ) {
             const idUser = req.userToken.idUser;
             const email = req.userToken.email;
             const sql = `UPDATE schedule SET startDate =?, endDate =?, startLocation =?, endLocation =?, 
@@ -399,8 +401,7 @@ const updateSchedulePending = async (req, res) => {
                         // call getScheduleToSendEmail function
                         getScheduleToSendEmail(
                             idSchedule,
-                            email,
-                            idUser,
+                            null,
                             Strings.Common.UPDATE_SUCCESS,
                             Constants.Styles.COLOR_PRIMARY
                         );

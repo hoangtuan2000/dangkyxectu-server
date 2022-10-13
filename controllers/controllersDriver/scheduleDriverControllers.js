@@ -3,6 +3,9 @@ const { helper } = require("../../common/helper");
 const { Constants } = require("../../constants/Constants");
 const { Strings } = require("../../constants/Strings");
 const db = require("../../models/index");
+const {
+    getScheduleToSendEmail,
+} = require("../controllersGlobal/scheduleControllers");
 
 const getDriverScheduleList = async (req, res) => {
     let {
@@ -248,13 +251,19 @@ const confirmReceivedOrCompleteOfSchedule = async (req, res, next) => {
             : 0;
         const currentDate = helper.formatTimeStamp(new Date().getTime());
         let scheduleStatusCode = null;
+        let titleEmail = "";
+        let colorTitleEmail = Constants.Styles.COLOR_PRIMARY;
         // UPDATE CAR FAIL BEFORE RUN
         if (req.updateIsCarFailBeforeRun) {
+            titleEmail = Strings.Common.SCHEDULE_HAS_BEEN_RECEIVED;
+            colorTitleEmail = Constants.Styles.COLOR_BLUE_GREEN;
             scheduleStatusCode = Constants.ScheduleStatusCode.RECEIVED;
             sql = `UPDATE schedule SET isCarFailBeforeRun= ?, idScheduleStatus= ?, idUserLastUpdated= ?, updatedAt= ? WHERE idSchedule = ?`;
         }
         // UPDATE CAR FAIL AFTER RUN
         else {
+            titleEmail = Strings.Common.COMPLETE_SCHEDULE;
+            colorTitleEmail = Constants.Styles.COLOR_PRIMARY;
             scheduleStatusCode = Constants.ScheduleStatusCode.COMPLETE;
             sql = `UPDATE schedule SET isCarFailAfterRun= ?, idScheduleStatus= ?, idUserLastUpdated= ?, updatedAt= ? WHERE idSchedule = ?`;
         }
@@ -268,6 +277,12 @@ const confirmReceivedOrCompleteOfSchedule = async (req, res, next) => {
                     res.status(200).send(data);
                 } else {
                     if (result.changedRows > 0) {
+                        getScheduleToSendEmail(
+                            idSchedule,
+                            null,
+                            titleEmail,
+                            colorTitleEmail
+                        );
                         next();
                     } else {
                         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
@@ -424,6 +439,12 @@ const confirmMoving = async (req, res) => {
                                 res.status(200).send(data);
                             } else {
                                 if (result.changedRows > 0) {
+                                    getScheduleToSendEmail(
+                                        idSchedule,
+                                        null,
+                                        Strings.Common.MOVING,
+                                        Constants.Styles.COLOR_YELLOW_GREEN
+                                    );
                                     data.status = Constants.ApiCode.OK;
                                     data.message = Strings.Common.SUCCESS;
                                     res.status(200).send(data);
