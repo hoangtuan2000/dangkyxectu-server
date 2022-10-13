@@ -289,14 +289,15 @@ const cancelSchedule = async (req, res) => {
     let data = { ...Constants.ResultData };
 
     if (req.userToken) {
-        let sql = `UPDATE schedule SET updatedAt=?, idScheduleStatus=? WHERE idSchedule = ? 
+        const idUser = req.userToken.idUser;
+        let sql = `UPDATE schedule SET updatedAt=?, idScheduleStatus=?, idUserLastUpdated=? WHERE idSchedule = ? 
             AND idScheduleStatus IN (${Constants.ScheduleStatusCode.PENDING}, ${Constants.ScheduleStatusCode.APPROVED}, ${Constants.ScheduleStatusCode.RECEIVED}) 
             AND DATE(FROM_UNIXTIME(startDate)) >= CURRENT_DATE()`;
         let currentDate = helper.formatTimeStamp(new Date().getTime());
         let scheduleStatusCode = Constants.ScheduleStatusCode.CANCELLED;
         db.query(
             sql,
-            [currentDate, scheduleStatusCode, idSchedule],
+            [currentDate, scheduleStatusCode, idUser, idSchedule],
             (err, result) => {
                 if (err) {
                     data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
