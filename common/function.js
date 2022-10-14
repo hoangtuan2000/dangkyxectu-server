@@ -24,6 +24,8 @@ const sendEmailCreateOrUpdateSchedule = (
     seatNumber,
     licensePlates,
     scheduleStatus,
+    titleReasonCancel,
+    reasonCancel,
     colorScheduleStatus,
     dateRange,
     reason,
@@ -54,6 +56,13 @@ const sendEmailCreateOrUpdateSchedule = (
                 <span class="textContent">Ngày Cập Nhật:</span>
                 <span>${updatedAt}</span>
             </p>`
+        : `<span></span>`;
+
+    const reasonCancelSchedule = reasonCancel
+        ? `<p>
+        <span class="textContent">${titleReasonCancel}:</span>
+        <span class="textReasonCancel">${reasonCancel}</span>
+    </p>`
         : `<span></span>`;
 
     const html = `<!DOCTYPE html>
@@ -116,6 +125,9 @@ const sendEmailCreateOrUpdateSchedule = (
                                             : Constants.Styles.COLOR_SECONDARY
                                     }
                                 }
+                                .textReasonCancel {
+                                    color: red
+                                }
                                 .buttonShowDetail {
                                     background-color: #3b8cff;
                                     padding: 5px;
@@ -154,6 +166,7 @@ const sendEmailCreateOrUpdateSchedule = (
                                             <span class="textContent">Trạng Thái Lịch Trình:</span>
                                             <span class="textStatusSchedule">${scheduleStatus}</span>
                                         </p>
+                                        ${reasonCancelSchedule}
                                         <p>
                                             <span class="textContent">Thời Gian:</span>
                                             <span class="textDate">${dateRange}</span>

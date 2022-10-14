@@ -21,7 +21,8 @@ router.post(
 router.post(
     "/cancelSchedule",
     authenticationControllers.getUserToken,
-    scheduleUserControllers.cancelSchedule
+    scheduleUserControllers.cancelSchedule,
+    scheduleUserControllers.sendNotificationEmailCancelSchedule,
 );
 router.post(
     "/updateSchedulePending",

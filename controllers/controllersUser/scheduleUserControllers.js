@@ -268,7 +268,8 @@ const updatePhoneNumberUserInSchedule = async (req, res) => {
                         } else {
                             data.status =
                                 Constants.ApiCode.INTERNAL_SERVER_ERROR;
-                            data.message = Strings.Common.CURRENTLY_UNABLE_TO_UPDATE;
+                            data.message =
+                                Strings.Common.CURRENTLY_UNABLE_TO_UPDATE;
                             res.status(200).send(data);
                         }
                     }
@@ -286,47 +287,105 @@ const updatePhoneNumberUserInSchedule = async (req, res) => {
     }
 };
 
-const cancelSchedule = async (req, res) => {
-    const { idSchedule } = req.body;
+const cancelSchedule = async (req, res, next) => {
+    const { idSchedule, reasonCancel } = req.body;
 
     let data = { ...Constants.ResultData };
 
     if (req.userToken) {
-        const idUser = req.userToken.idUser;
-        let sql = `UPDATE schedule SET updatedAt=?, idScheduleStatus=?, idUserLastUpdated=? WHERE idSchedule = ? 
+        if (
+            helper.isValidStringBetweenMinMaxLength(
+                reasonCancel,
+                Constants.Common.CHARACTERS_MIN_LENGTH_REASON_CANCEL_SCHEDULE,
+                Constants.Common.CHARACTERS_MAX_LENGTH_REASON_CANCEL_SCHEDULE
+            )
+        ) {
+            const idUser = req.userToken.idUser;
+            let sql = `UPDATE schedule SET updatedAt=?, idScheduleStatus=?, idUserLastUpdated=?, reasonCancel=? WHERE idSchedule = ? 
             AND idScheduleStatus IN (${Constants.ScheduleStatusCode.PENDING}, ${Constants.ScheduleStatusCode.APPROVED}, ${Constants.ScheduleStatusCode.RECEIVED}) 
             AND DATE(FROM_UNIXTIME(startDate)) >= CURRENT_DATE()`;
-        let currentDate = helper.formatTimeStamp(new Date().getTime());
-        let scheduleStatusCode = Constants.ScheduleStatusCode.CANCELLED;
-        db.query(
-            sql,
-            [currentDate, scheduleStatusCode, idUser, idSchedule],
-            (err, result) => {
-                if (err) {
-                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-                    data.message = Strings.Common.ERROR;
-                    res.status(200).send(data);
-                } else {
-                    if (result.changedRows > 0) {
-                        data.status = Constants.ApiCode.OK;
-                        data.message = Strings.Common.SUCCESS;
-                        res.status(200).send(data);
-                        // call getScheduleToSendEmail function
-                        getScheduleToSendEmail(
-                            idSchedule,
-                            null,
-                            Strings.Common.CANCEL_SUCCESSFUL_REGISTRATION,
-                            Constants.Styles.COLOR_ERROR
-                        );
-                    } else {
+            let currentDate = helper.formatTimeStamp(new Date().getTime());
+            let scheduleStatusCode = Constants.ScheduleStatusCode.CANCELLED;
+            db.query(
+                sql,
+                [
+                    currentDate,
+                    scheduleStatusCode,
+                    idUser,
+                    reasonCancel,
+                    idSchedule,
+                ],
+                (err, result) => {
+                    if (err) {
                         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-                        data.message =
-                            Strings.Common.CURRENTLY_CANNOT_CANCEL_SCHEDULE;
+                        data.message = Strings.Common.ERROR;
                         res.status(200).send(data);
+                    } else {
+                        if (result.changedRows > 0) {
+                            data.status = Constants.ApiCode.OK;
+                            data.message = Strings.Common.SUCCESS;
+                            res.status(200).send(data);
+                            // call getScheduleToSendEmail function
+                            next();
+                        } else {
+                            data.status =
+                                Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                            data.message =
+                                Strings.Common.CURRENTLY_CANNOT_CANCEL_SCHEDULE;
+                            res.status(200).send(data);
+                        }
                     }
                 }
+            );
+        } else {
+            data.status = Constants.ApiCode.BAD_REQUEST;
+            data.message = !reasonCancel
+                ? Strings.Common.INVALID_DATA
+                : `Lý Do Từ ${Constants.Common.CHARACTERS_MIN_LENGTH_REASON_CANCEL_SCHEDULE} - ${Constants.Common.CHARACTERS_MAX_LENGTH_REASON_CANCEL_SCHEDULE} Ký Tự`;
+            res.status(200).send(data);
+        }
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
+
+const sendNotificationEmailCancelSchedule = async (req, res, next) => {
+    const { idSchedule } = req.body;
+
+    if (req.userToken) {
+        const sql = `SELECT 
+                        ad.email as emailAdmin, dr.email as emailDriver, us.email as emailUser
+                    FROM schedule as sc
+                    RIGHT JOIN user as ad ON ad.idUser = sc.idAdmin
+                    RIGHT JOIN user as dr ON dr.idUser = sc.idDriver
+                    RIGHT JOIN user as us ON us.idUser = sc.idUser
+                    WHERE sc.idSchedule = ?`;
+        db.query(sql, idSchedule, (err, result) => {
+            if (!err) {
+                if (result.length > 0) {
+                    getScheduleToSendEmail(
+                        idSchedule,
+                        result[0].emailDriver,
+                        Strings.Common.CANCEL_SUCCESSFUL_REGISTRATION,
+                        Constants.Styles.COLOR_ERROR
+                    );
+                    getScheduleToSendEmail(
+                        idSchedule,
+                        result[0].emailAdmin,
+                        Strings.Common.CANCEL_SUCCESSFUL_REGISTRATION,
+                        Constants.Styles.COLOR_ERROR
+                    );
+                    getScheduleToSendEmail(
+                        idSchedule,
+                        result[0].emailUser,
+                        Strings.Common.CANCEL_SUCCESSFUL_REGISTRATION,
+                        Constants.Styles.COLOR_ERROR
+                    );
+                }
             }
-        );
+        });
     } else {
         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
         data.message = Strings.Common.USER_NOT_EXIST;
@@ -434,5 +493,6 @@ module.exports = {
     createOrUpdateReview,
     updatePhoneNumberUserInSchedule,
     cancelSchedule,
+    sendNotificationEmailCancelSchedule,
     updateSchedulePending,
 };

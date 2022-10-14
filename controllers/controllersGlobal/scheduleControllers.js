@@ -296,7 +296,8 @@ const getScheduleToSendEmail = (
                     ca.idCar, ca.image, ca.licensePlates, 
                     ct.name as carType, ct.seatNumber,
                     ss.name as scheduleStatus,
-                    sc.idSchedule, sc.startDate, sc.reason, sc.phoneUser, sc.endDate, sc.startLocation, sc.endLocation, sc.createdAt, sc.updatedAt,
+                    sc.idSchedule, sc.startDate, sc.reason, sc.phoneUser, sc.endDate, sc.startLocation, sc.endLocation, sc.createdAt, 
+                    sc.updatedAt, sc.reasonCancel, sc.idScheduleStatus,
                     ws.name as wardStart, ds.name as districtStart, ps.name as provinceStart,
                     we.name as wardEnd, de.name as districtEnd, pe.name as provinceEnd,
                     us.fullName as fullNameUser, us.email as emailUser,
@@ -367,6 +368,21 @@ const getScheduleToSendEmail = (
                 const startLocation = `${result.startLocation} - ${result.wardStart} - ${result.districtStart} - ${result.provinceStart}`;
                 const endLocation = `${result.endLocation} - ${result.wardEnd} - ${result.districtEnd} - ${result.provinceEnd}`;
                 const sendEmailAddress = email ? email : result.emailUser;
+                let reasonCancel = null;
+                let titleReasonCancel = "Lý Do";
+                if (
+                    result.idScheduleStatus ==
+                        Constants.ScheduleStatusCode.CANCELLED ||
+                    result.idScheduleStatus ==
+                        Constants.ScheduleStatusCode.REFUSE
+                ) {
+                    reasonCancel = result.reasonCancel;
+                    titleReasonCancel =
+                        result.idScheduleStatus ==
+                        Constants.ScheduleStatusCode.CANCELLED
+                            ? "Lý Do Hủy"
+                            : "Lý Do Từ Chối";
+                }
                 sendEmailCreateOrUpdateSchedule(
                     sendEmailAddress,
                     `Đăng Ký ${result.carType} ${result.seatNumber} Chổ ( Số: ${idSchedule} )`,
@@ -378,6 +394,8 @@ const getScheduleToSendEmail = (
                     result.seatNumber,
                     result.licensePlates,
                     result.scheduleStatus,
+                    titleReasonCancel,
+                    reasonCancel,
                     colorTextScheduleStatus,
                     `${startDate} - ${endDate}`,
                     result.reason,
