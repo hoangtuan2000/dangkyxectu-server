@@ -43,6 +43,13 @@ router.post(
     scheduleAdminControllers.getCarListToChangeCar
 );
 
+router.post(
+    "/changeCarSchedule",
+    authenticationControllers.authenticationAdmin,
+    scheduleAdminControllers.changeCarSchedule,
+    scheduleAdminControllers.sendNotificationEmailChangeCarSchedule,
+);
+
 // CAR ADMIN
 router.post(
     "/getCarListForAdmin",

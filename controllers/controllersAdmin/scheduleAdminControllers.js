@@ -1,3 +1,4 @@
+const { async } = require("@firebase/util");
 const { executeQuery } = require("../../common/function");
 const { helper } = require("../../common/helper");
 const { Constants } = require("../../constants/Constants");
@@ -410,24 +411,83 @@ const getDriverListForSchedule = async (req, res) => {
 //     }
 // };
 
-const getCarListToChangeCar = (req, res) => {
-    const { idCar } = req.body;
+const getCarListToChangeCar = async (req, res) => {
+    const {
+        idCar,
+        page,
+        limitEntry,
+        searchCar,
+        isSearchCarCode,
+        isSearchCarLicensePlates,
+        isSearchCarSeatNumber,
+    } = req.body;
     let data = { ...Constants.ResultData };
+    let dataList = { ...Constants.ResultDataList };
 
     if (req.userToken) {
-        const sql = `SELECT * FROM car WHERE idCar != ?`;
-        db.query(sql, idCar, (err, result) => {
-            if (err) {
-                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-                data.message = Strings.Common.ERROR;
-                res.status(200).send(data);
+        let sqlExecuteQuery = `SELECT COUNT(ca.idCar) as sizeQuerySnapshot 
+                                FROM car as ca
+                                LEFT JOIN car_type as ct ON ct.idCarType = ca.idCarType
+                                WHERE ca.idCar != ?`;
+
+        let conditionSql = "";
+        if (searchCar) {
+            if (
+                !isSearchCarCode &&
+                !isSearchCarLicensePlates &&
+                !isSearchCarSeatNumber
+            ) {
+                conditionSql += ` AND (ca.idCar = '${searchCar}' OR ca.licensePlates LIKE '%${searchCar}%' OR ct.seatNumber = '${searchCar}') `;
             } else {
-                data.status = Constants.ApiCode.OK;
-                data.message = Strings.Common.SUCCESS;
-                data.data = [...result];
-                res.status(200).send(data);
+                let conditionCarCode = isSearchCarCode
+                    ? ` ca.idCar = '${searchCar}' OR `
+                    : "";
+                let conditionCarLicensePlates = isSearchCarLicensePlates
+                    ? ` ca.licensePlates LIKE '%${searchCar}%' OR `
+                    : "";
+                let conditionCarSeatNumber = isSearchCarSeatNumber
+                    ? ` ct.seatNumber = '${searchCar}' OR `
+                    : "";
+                conditionSql += ` AND ( ${conditionCarCode} ${conditionCarLicensePlates} ${conditionCarSeatNumber} 1 != 1 ) `;
             }
-        });
+        }
+
+        const resultExecuteQuery = await executeQuery(
+            db,
+            `${sqlExecuteQuery} ${conditionSql}`,
+            idCar
+        );
+
+        if (!resultExecuteQuery) {
+            data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+            data.message = Strings.Common.ERROR_GET_DATA;
+            res.status(200).send(data);
+        } else {
+            const sql = `SELECT
+                            ca.idCar, ca.licensePlates, ca.image,
+                            ct.idCarType, ct.name as nameCarType, ct.seatNumber
+                        FROM car as ca
+                        LEFT JOIN car_type as ct ON ct.idCarType = ca.idCarType
+                        WHERE ca.idCar != ?  ${conditionSql}
+                        LIMIT ${limitEntry * page - limitEntry}, ${limitEntry}`;
+
+            db.query(sql, idCar, (err, result) => {
+                if (err) {
+                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                    data.message = Strings.Common.ERROR;
+                    res.status(200).send(data);
+                } else {
+                    dataList.status = Constants.ApiCode.OK;
+                    dataList.message = Strings.Common.SUCCESS;
+                    dataList.limitEntry = limitEntry;
+                    dataList.page = page;
+                    dataList.sizeQuerySnapshot =
+                        resultExecuteQuery[0].sizeQuerySnapshot;
+                    dataList.data = [...result];
+                    res.status(200).send(dataList);
+                }
+            });
+        }
     } else {
         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
         data.message = Strings.Common.USER_NOT_EXIST;
@@ -504,7 +564,7 @@ const updateSchedulePending = async (req, res, next) => {
                         data.message = Strings.Common.SUCCESS;
                         res.status(200).send(data);
                         // call getScheduleToSendEmail function
-                        next()
+                        next();
                     } else {
                         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
                         data.message =
@@ -624,6 +684,85 @@ const updateScheduleApproved = async (req, res) => {
     }
 };
 
+const changeCarSchedule = async (req, res, next) => {
+    let { idSchedule, idCarNew } = req.body;
+    let data = { ...Constants.ResultData };
+
+    if (req.userToken) {
+        const idAdmin = req.userToken.idUser;
+        let currentDate = helper.formatTimeStamp(new Date().getTime());
+        const sql = `UPDATE schedule SET updatedAt=?, idUserLastUpdated=?, idCar=? WHERE idSchedule = ? 
+                        AND idScheduleStatus IN (${Constants.ScheduleStatusCode.PENDING}, ${Constants.ScheduleStatusCode.APPROVED})`;
+        db.query(
+            sql,
+            [currentDate, idAdmin, idCarNew, idSchedule],
+            (err, result) => {
+                if (err) {
+                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                    data.message = Strings.Common.ERROR;
+                    res.status(200).send(data);
+                } else {
+                    if (result.changedRows > 0) {
+                        data.status = Constants.ApiCode.OK;
+                        data.message = Strings.Common.SUCCESS;
+                        res.status(200).send(data);
+                        // call getScheduleToSendEmail function
+                        next();
+                    } else {
+                        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                        data.message =
+                            Strings.Common.CURRENTLY_UNABLE_TO_UPDATE;
+                        res.status(200).send(data);
+                    }
+                }
+            }
+        );
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
+
+const sendNotificationEmailChangeCarSchedule = async (req, res) => {
+    const { idSchedule } = req.body;
+
+    if (req.userToken) {
+        const sql = `SELECT 
+                        ad.email as emailAdmin, dr.email as emailDriver, us.email as emailUser, ca.licensePlates
+                    FROM schedule as sc
+                    LEFT JOIN car as ca ON ca.idCar = sc.idCar
+                    RIGHT JOIN user as ad ON ad.idUser = sc.idAdmin
+                    RIGHT JOIN user as dr ON dr.idUser = sc.idDriver
+                    RIGHT JOIN user as us ON us.idUser = sc.idUser
+                    WHERE sc.idSchedule = ?`;
+        db.query(sql, idSchedule, (err, result) => {
+            if (!err) {
+                if (result.length > 0) {
+                    let titleEmail = `Đổi Sang Xe ${result[0].licensePlates}`;
+                    let colorTitleEmail = Constants.Styles.COLOR_WARNING;
+                    getScheduleToSendEmail(
+                        idSchedule,
+                        result[0].emailDriver,
+                        titleEmail,
+                        colorTitleEmail
+                    );
+                    getScheduleToSendEmail(
+                        idSchedule,
+                        result[0].emailUser,
+                        titleEmail,
+                        colorTitleEmail
+                    );
+                }
+            }
+        });
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
+
 module.exports = {
     getAdminScheduleList,
     getDriverListForSchedule,
@@ -632,4 +771,6 @@ module.exports = {
     updateScheduleApproved,
     getCarListToChangeCar,
     sendNotificationEmailUpdateSchedulePeding,
+    changeCarSchedule,
+    sendNotificationEmailChangeCarSchedule,
 };

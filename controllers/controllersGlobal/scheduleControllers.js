@@ -8,13 +8,15 @@ const getSchedule = async (req, res) => {
     const { idSchedule } = req.body;
     let data = { ...Constants.ResultData };
     let sql = `SELECT
-                    sc.idSchedule, sc.reason, sc.note, sc.startDate, sc.endDate, sc.startLocation, sc.endLocation, sc.phoneUser, sc.createdAt, sc.updatedAt,
+                    sc.idSchedule, sc.reason, sc.note, sc.startDate, sc.endDate, sc.startLocation, sc.endLocation, sc.phoneUser, 
+                    sc.createdAt, sc.updatedAt, sc.reasonCancel, 
                     ca.idCar, ca.image, ca.licensePlates, ca.idCarType, ca.idCarColor, ca.idCarBrand, ca.idCarStatus,
                     ct.name as carType, ct.seatNumber,
                     ss.name as scheduleStatus, ss.idScheduleStatus,
                     re.idReview, re.starNumber, re.comment,
                     cb.name as carBrand,
                     cs.name as carStatus,
+                    userUpdate.fullName as fullNameUserUpdate, userUpdate.email as emailUserUpdate, userUpdate.code as codeUserUpdate,
                     us.fullName as fullNameUser, us.email as emailUser, us.code as codeUser,
                     dr.idUser as idDriver, dr.fullName as fullNameDriver, dr.phone as phoneDriver, dr.email as emailDriver, dr.code as codeDriver,
                     ad.fullName as fullNameAdmin, ad.code as codeAdmin,
@@ -38,6 +40,7 @@ const getSchedule = async (req, res) => {
                 LEFT JOIN district as de ON de.idDistrict = we.idDistrict
                 LEFT JOIN province as pe ON pe.idProvince = de.idProvince
                 LEFT JOIN review as re ON re.idSchedule = sc.idSchedule
+                LEFT JOIN user as userUpdate ON userUpdate.idUser = sc.idUserLastUpdated
                 LEFT JOIN user as us ON us.idUser = sc.idUser
                 LEFT JOIN user as dr ON dr.idUser = sc.idDriver
                 LEFT JOIN user as ad ON ad.idUser = sc.idAdmin
