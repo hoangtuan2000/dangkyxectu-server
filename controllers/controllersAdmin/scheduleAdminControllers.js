@@ -435,8 +435,8 @@ const getCarListToChangeCar = (req, res) => {
     }
 };
 
-const updateSchedulePending = async (req, res) => {
-    let { idSchedule, idScheduleStatus, idDriver } = req.body;
+const updateSchedulePending = async (req, res, next) => {
+    let { idSchedule, idScheduleStatus, idDriver, reasonRefuse } = req.body;
     let data = { ...Constants.ResultData };
 
     if (req.userToken) {
@@ -447,7 +447,15 @@ const updateSchedulePending = async (req, res) => {
         let titleEmail = "";
         let colorTitleEmail = Constants.Styles.COLOR_PRIMARY;
         // REFUSE SCHEDULE
-        if (idScheduleStatus == Constants.ScheduleStatusCode.REFUSE) {
+        if (
+            idScheduleStatus == Constants.ScheduleStatusCode.REFUSE &&
+            !helper.isNullOrEmpty(reasonRefuse) &&
+            helper.isValidStringBetweenMinMaxLength(
+                reasonRefuse,
+                Constants.Common.CHARACTERS_MIN_LENGTH_REASON_CANCEL_SCHEDULE,
+                Constants.Common.CHARACTERS_MAX_LENGTH_REASON_CANCEL_SCHEDULE
+            )
+        ) {
             titleEmail = Strings.Common.SCHEDULE_HAS_BEEN_REFUSED;
             colorTitleEmail = Constants.Styles.COLOR_ERROR;
             dataSql = [
@@ -455,9 +463,10 @@ const updateSchedulePending = async (req, res) => {
                 idAdmin,
                 idAdmin,
                 idScheduleStatus,
+                reasonRefuse,
                 idSchedule,
             ];
-            sql = `UPDATE schedule SET updatedAt=?, idAdmin=?, idUserLastUpdated=?, idScheduleStatus=? 
+            sql = `UPDATE schedule SET updatedAt=?, idAdmin=?, idUserLastUpdated=?, idScheduleStatus=?, reasonCancel=?
                 WHERE idSchedule =? AND idScheduleStatus = ${Constants.ScheduleStatusCode.PENDING}  AND DATE(FROM_UNIXTIME(startDate)) > CURRENT_DATE()`;
         }
         // APPROVED SCHEDULE
@@ -481,7 +490,7 @@ const updateSchedulePending = async (req, res) => {
 
         if (helper.isNullOrEmpty(sql) || helper.isArrayEmpty(dataSql)) {
             data.status = Constants.ApiCode.BAD_REQUEST;
-            data.message = Strings.Common.INVALID_REQUEST;
+            data.message = Strings.Common.INVALID_DATA;
             res.status(200).send(data);
         } else {
             db.query(sql, [...dataSql], (err, result) => {
@@ -495,12 +504,7 @@ const updateSchedulePending = async (req, res) => {
                         data.message = Strings.Common.SUCCESS;
                         res.status(200).send(data);
                         // call getScheduleToSendEmail function
-                        getScheduleToSendEmail(
-                            idSchedule,
-                            null,
-                            titleEmail,
-                            colorTitleEmail
-                        );
+                        next()
                     } else {
                         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
                         data.message =
@@ -510,6 +514,57 @@ const updateSchedulePending = async (req, res) => {
                 }
             });
         }
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
+
+const sendNotificationEmailUpdateSchedulePeding = async (req, res) => {
+    const { idSchedule } = req.body;
+
+    if (req.userToken) {
+        const sql = `SELECT 
+                        ad.email as emailAdmin, dr.email as emailDriver, us.email as emailUser, sc.idScheduleStatus
+                    FROM schedule as sc
+                    RIGHT JOIN user as ad ON ad.idUser = sc.idAdmin
+                    RIGHT JOIN user as dr ON dr.idUser = sc.idDriver
+                    RIGHT JOIN user as us ON us.idUser = sc.idUser
+                    WHERE sc.idSchedule = ?`;
+        db.query(sql, idSchedule, (err, result) => {
+            if (!err) {
+                if (result.length > 0) {
+                    let titleEmail = "";
+                    let colorTitleEmail = Constants.Styles.COLOR_PRIMARY;
+                    if (
+                        result[0].idScheduleStatus ==
+                        Constants.ScheduleStatusCode.APPROVED
+                    ) {
+                        titleEmail = Strings.Common.SCHEDULE_HAS_BEEN_APPROVED;
+                        colorTitleEmail = Constants.Styles.COLOR_SUCCESS;
+                        getScheduleToSendEmail(
+                            idSchedule,
+                            result[0].emailDriver,
+                            titleEmail,
+                            colorTitleEmail
+                        );
+                    } else if (
+                        result[0].idScheduleStatus ==
+                        Constants.ScheduleStatusCode.REFUSE
+                    ) {
+                        titleEmail = Strings.Common.SCHEDULE_HAS_BEEN_REFUSED;
+                        colorTitleEmail = Constants.Styles.COLOR_ERROR;
+                    }
+                    getScheduleToSendEmail(
+                        idSchedule,
+                        result[0].emailUser,
+                        titleEmail,
+                        colorTitleEmail
+                    );
+                }
+            }
+        });
     } else {
         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
         data.message = Strings.Common.USER_NOT_EXIST;
@@ -576,4 +631,5 @@ module.exports = {
     updateSchedulePending,
     updateScheduleApproved,
     getCarListToChangeCar,
+    sendNotificationEmailUpdateSchedulePeding,
 };

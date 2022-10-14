@@ -351,7 +351,8 @@ const cancelSchedule = async (req, res, next) => {
     }
 };
 
-const sendNotificationEmailCancelSchedule = async (req, res, next) => {
+
+const sendNotificationEmailCancelSchedule = async (req, res) => {
     const { idSchedule } = req.body;
 
     if (req.userToken) {

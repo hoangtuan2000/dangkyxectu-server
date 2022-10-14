@@ -1,5 +1,6 @@
 const authenticationControllers = require("../../controllers/controllersGlobal/authenticationControllers");
 const scheduleAdminControllers = require("../../controllers/controllersAdmin/scheduleAdminControllers");
+const scheduleControllers = require("../../controllers/controllersGlobal/scheduleControllers");
 const carAdminControllers = require("../../controllers/controllersAdmin/carAdminControllers");
 const imageAdminControllers = require("../../controllers/controllersAdmin/imageAdminControllers");
 const router = require("express").Router();
@@ -26,7 +27,8 @@ router.post(
 router.post(
     "/updateSchedulePending",
     authenticationControllers.authenticationAdmin,
-    scheduleAdminControllers.updateSchedulePending
+    scheduleAdminControllers.updateSchedulePending,
+    scheduleAdminControllers.sendNotificationEmailUpdateSchedulePeding,
 );
 
 router.post(
