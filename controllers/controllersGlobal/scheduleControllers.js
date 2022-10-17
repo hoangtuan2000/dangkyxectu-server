@@ -13,7 +13,7 @@ const getSchedule = async (req, res) => {
                     ca.idCar, ca.image, ca.licensePlates, ca.idCarType, ca.idCarColor, ca.idCarBrand, ca.idCarStatus,
                     ct.name as carType, ct.seatNumber,
                     ss.name as scheduleStatus, ss.idScheduleStatus,
-                    re.idReview, re.starNumber, re.comment,
+                    re.idReview, re.starNumber, re.comment as commentReview,
                     cb.name as carBrand,
                     cs.name as carStatus,
                     userUpdate.fullName as fullNameUserUpdate, userUpdate.email as emailUserUpdate, userUpdate.code as codeUserUpdate,
