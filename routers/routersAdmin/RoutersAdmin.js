@@ -2,6 +2,7 @@ const authenticationControllers = require("../../controllers/controllersGlobal/a
 const scheduleAdminControllers = require("../../controllers/controllersAdmin/scheduleAdminControllers");
 const scheduleControllers = require("../../controllers/controllersGlobal/scheduleControllers");
 const carAdminControllers = require("../../controllers/controllersAdmin/carAdminControllers");
+const driverAdminControllers = require("../../controllers/controllersAdmin/driverAdminControllers");
 const imageAdminControllers = require("../../controllers/controllersAdmin/imageAdminControllers");
 const router = require("express").Router();
 
@@ -91,6 +92,20 @@ router.post(
     carAdminControllers.updateCar,
     carAdminControllers.updateCarLicense,
     imageAdminControllers.deleteImageFromFirebase,
+);
+
+// TRIP
+router.post(
+    "/getCarStatusListOfTrips",
+    authenticationControllers.authenticationAdmin,
+    scheduleAdminControllers.getCarStatusListOfTrips
+);
+
+// DRIVER
+router.post(
+    "/getDriverList",
+    authenticationControllers.authenticationAdmin,
+    driverAdminControllers.getDriverList
 );
 
 module.exports = router;

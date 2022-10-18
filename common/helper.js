@@ -104,7 +104,7 @@ const helper = {
     },
 
     convertStringBooleanToBoolean: (stringBoolean) => {
-        return stringBoolean == "true";
+        return stringBoolean.toString() == "true";
     },
 
     isDateTimeStampGreaterThanOrEqualCurrentDate: (timeStamp) => {

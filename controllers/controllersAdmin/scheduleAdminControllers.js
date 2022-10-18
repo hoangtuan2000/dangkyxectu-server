@@ -1,4 +1,5 @@
 const { async } = require("@firebase/util");
+const e = require("express");
 const { executeQuery } = require("../../common/function");
 const { helper } = require("../../common/helper");
 const { Constants } = require("../../constants/Constants");
@@ -763,6 +764,222 @@ const sendNotificationEmailChangeCarSchedule = async (req, res) => {
     }
 };
 
+// CAR STATUS BEFORE AND AFTER TRIP
+const getCarStatusListOfTrips = async (req, res, next) => {
+    let {
+        page,
+        limitEntry,
+        carType,
+        carBrand,
+        driver,
+        licensePlates,
+        carCode,
+        isBrokenCarPartsBeforeTrip,
+        isBrokenCarPartsAfterTrip,
+        startDate,
+        endDate,
+    } = req.body;
+
+    page = parseInt(page) || Constants.Common.PAGE;
+    limitEntry = parseInt(limitEntry) || Constants.Common.LIMIT_ENTRY;
+
+    let data = { ...Constants.ResultData };
+    let dataList = { ...Constants.ResultDataList };
+
+    if (req.userToken) {
+        if (
+            (driver && !helper.isArray(driver)) ||
+            (carType && !helper.isArray(carType)) ||
+            (carBrand && !helper.isArray(carBrand))
+        ) {
+            data.status = Constants.ApiCode.BAD_REQUEST;
+            data.message = Strings.Common.INVALID_DATA;
+            res.status(200).send(data);
+        } else {
+            let sqlExecuteQuery = `SELECT
+                                    COUNT(sc.idSchedule) as sizeQuerySnapshot 
+                                FROM schedule as sc
+                                LEFT JOIN car as ca ON ca.idCar = sc.idCar
+                                LEFT JOIN car_type as ct ON ct.idCarType = ca.idCarType
+                                LEFT JOIN car_brand as cb ON cb.idCarBrand = ca.idCarBrand
+                                LEFT JOIN user as us ON us.idUser = sc.idUser
+                                LEFT JOIN user as dr ON dr.idUser = sc.idDriver
+                                LEFT JOIN 
+                                    (SELECT idSchedule, SUM(IF(isReceiveCar = '1', 1, 0)) as totalBrokenPartsBeforeTrip, 
+                                     SUM(IF(isReceiveCar = '0', 1, 0)) as totalBrokenPartsAfterTrip
+                                    FROM broken_car_parts
+                                    GROUP BY idSchedule) as bcp 
+                                    ON bcp.idSchedule = sc.idSchedule
+                                WHERE sc.idScheduleStatus NOT IN (${Constants.ScheduleStatusCode.PENDING}, ${Constants.ScheduleStatusCode.APPROVED}) `;
+
+            let conditionSql = "";
+            if (driver && driver.length > 0) {
+                let sqlTemp = "";
+                for (let i = 0; i < driver.length; i++) {
+                    if (i == 0) {
+                        if (driver.length > 1) {
+                            sqlTemp += ` AND ( dr.idUser = '${driver[i]}' `;
+                        } else {
+                            sqlTemp += ` AND ( dr.idUser = '${driver[i]}' ) `;
+                        }
+                    } else if (i == driver.length - 1) {
+                        sqlTemp += ` OR dr.idUser = '${driver[i]}' ) `;
+                    } else {
+                        sqlTemp += ` OR dr.idUser = '${driver[i]}' `;
+                    }
+                }
+                conditionSql += sqlTemp;
+            }
+
+            if (carBrand && carBrand.length > 0) {
+                let sqlTemp = "";
+                for (let i = 0; i < carBrand.length; i++) {
+                    if (i == 0) {
+                        if (carBrand.length > 1) {
+                            sqlTemp += ` AND ( cb.idCarBrand = '${carBrand[i]}' `;
+                        } else {
+                            sqlTemp += ` AND ( cb.idCarBrand = '${carBrand[i]}' ) `;
+                        }
+                    } else if (i == carBrand.length - 1) {
+                        sqlTemp += ` OR cb.idCarBrand = '${carBrand[i]}' ) `;
+                    } else {
+                        sqlTemp += ` OR cb.idCarBrand = '${carBrand[i]}' `;
+                    }
+                }
+                conditionSql += sqlTemp;
+            }
+
+            if (carType && carType.length > 0) {
+                let sqlTemp = "";
+                for (let i = 0; i < carType.length; i++) {
+                    if (i == 0) {
+                        if (carType.length > 1) {
+                            sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' `;
+                        } else {
+                            sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' ) `;
+                        }
+                    } else if (i == carType.length - 1) {
+                        sqlTemp += ` OR ct.idCarType = '${carType[i]}' ) `;
+                    } else {
+                        sqlTemp += ` OR ct.idCarType = '${carType[i]}' `;
+                    }
+                }
+                conditionSql += sqlTemp;
+            }
+
+            if (!helper.isNullOrEmpty(isBrokenCarPartsBeforeTrip)) {
+                if (
+                    helper.convertStringBooleanToBoolean(
+                        isBrokenCarPartsBeforeTrip
+                    )
+                ) {
+                    conditionSql += ` AND (bcp.totalBrokenPartsBeforeTrip IS NULL ) `;
+                } else {
+                    conditionSql += ` AND (bcp.totalBrokenPartsBeforeTrip IS NOT NULL) `;
+                }
+            }
+
+            if (!helper.isNullOrEmpty(isBrokenCarPartsAfterTrip)) {
+                if (
+                    helper.convertStringBooleanToBoolean(
+                        isBrokenCarPartsAfterTrip
+                    )
+                ) {
+                    conditionSql += ` AND (bcp.totalBrokenPartsAfterTrip IS NULL) `;
+                } else {
+                    conditionSql += ` AND (bcp.totalBrokenPartsAfterTrip IS NOT NULL) `;
+                }
+            }
+
+            if (!helper.isNullOrEmpty(carCode)) {
+                conditionSql += ` AND (ca.idCar = '${carCode}') `;
+            }
+
+            if (!helper.isNullOrEmpty(licensePlates)) {
+                conditionSql += ` AND (ca.licensePlates LIKE '%${licensePlates}%') `;
+            }
+
+            if (
+                helper.formatTimeStamp(startDate) &&
+                helper.formatTimeStamp(endDate)
+            ) {
+                const startTimeStamp = helper.formatTimeStamp(startDate);
+                const endTimeStamp = helper.formatTimeStamp(endDate);
+                conditionSql += ` AND (( DATE(FROM_UNIXTIME(${startTimeStamp})) BETWEEN DATE(FROM_UNIXTIME(sc.startDate)) AND DATE(FROM_UNIXTIME(sc.endDate))) 
+                OR ( DATE(FROM_UNIXTIME(${endTimeStamp})) BETWEEN DATE(FROM_UNIXTIME(sc.startDate)) AND DATE(FROM_UNIXTIME(sc.endDate))) 
+                OR (DATE(FROM_UNIXTIME(sc.startDate)) BETWEEN DATE(FROM_UNIXTIME(${startTimeStamp})) AND DATE(FROM_UNIXTIME(${endTimeStamp}))) 
+                OR (DATE(FROM_UNIXTIME(sc.endDate)) BETWEEN DATE(FROM_UNIXTIME(${startTimeStamp})) AND DATE(FROM_UNIXTIME(${endTimeStamp})))) `;
+            }
+
+            const resultExecuteQuery = await executeQuery(
+                db,
+                `${sqlExecuteQuery} ${conditionSql}`
+            );
+
+            if (!resultExecuteQuery) {
+                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                data.message = Strings.Common.ERROR_GET_DATA;
+                res.status(200).send(data);
+            } else {
+                const sql = `SELECT
+                                IFNULL(bcp.totalBrokenPartsBeforeTrip, 0) as totalBrokenPartsBeforeTrip,
+                                IFNULL(bcp.totalBrokenPartsAfterTrip, 0) as totalBrokenPartsAfterTrip,
+                                sc.idSchedule, sc.startDate, sc.endDate,
+                                ss.idScheduleStatus, ss.name as nameScheduleStatus,
+                                ca.idCar, ca.licensePlates, ca.image,
+                                ct.idCarType, ct.name as nameCarType, ct.seatNumber,
+                                cb.idCarBrand, cb.name as nameCarBrand,
+                                us.idUser as idUser, us.fullName as fullNameUser, us.code as codeUser,
+                                dr.idUser as idDriver, dr.fullName as fullNameDriver, dr.code as codeDriver
+                            FROM schedule as sc
+                            LEFT JOIN car as ca ON ca.idCar = sc.idCar
+                            LEFT JOIN schedule_status as ss ON ss.idScheduleStatus = sc.idScheduleStatus
+                            LEFT JOIN car_type as ct ON ct.idCarType = ca.idCarType
+                            LEFT JOIN car_brand as cb ON cb.idCarBrand = ca.idCarBrand
+                            LEFT JOIN user as us ON us.idUser = sc.idUser
+                            LEFT JOIN user as dr ON dr.idUser = sc.idDriver
+                            LEFT JOIN
+                                (SELECT idSchedule,
+                                SUM(IF(isReceiveCar = '1', 1, 0)) as totalBrokenPartsBeforeTrip,
+                                SUM(IF(isReceiveCar = '0', 1, 0)) as totalBrokenPartsAfterTrip
+                                FROM broken_car_parts
+                                GROUP BY idSchedule) as bcp
+                                ON bcp.idSchedule = sc.idSchedule
+                            WHERE sc.idScheduleStatus NOT IN (${
+                                Constants.ScheduleStatusCode.PENDING
+                            }, ${
+                    Constants.ScheduleStatusCode.APPROVED
+                }) ${conditionSql}
+                            ORDER BY FROM_UNIXTIME(sc.startDate) DESC
+                            LIMIT ${
+                                limitEntry * page - limitEntry
+                            }, ${limitEntry}`;
+
+                db.query(sql, (err, result) => {
+                    if (err) {
+                        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                        data.message = Strings.Common.ERROR;
+                        res.status(200).send(data);
+                    } else {
+                        dataList.status = Constants.ApiCode.OK;
+                        dataList.message = Strings.Common.SUCCESS;
+                        dataList.limitEntry = limitEntry;
+                        dataList.page = page;
+                        dataList.sizeQuerySnapshot =
+                            resultExecuteQuery[0].sizeQuerySnapshot;
+                        dataList.data = [...result];
+                        res.status(200).send(dataList);
+                    }
+                });
+            }
+        }
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
+
 module.exports = {
     getAdminScheduleList,
     getDriverListForSchedule,
@@ -773,4 +990,5 @@ module.exports = {
     sendNotificationEmailUpdateSchedulePeding,
     changeCarSchedule,
     sendNotificationEmailChangeCarSchedule,
+    getCarStatusListOfTrips,
 };
