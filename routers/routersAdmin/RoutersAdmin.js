@@ -101,6 +101,12 @@ router.post(
     scheduleAdminControllers.getCarStatusListOfTrips
 );
 
+router.post(
+    "/getScheduleBrokenCarParts",
+    authenticationControllers.authenticationAdmin,
+    scheduleAdminControllers.getScheduleBrokenCarParts
+);
+
 // DRIVER
 router.post(
     "/getDriverList",

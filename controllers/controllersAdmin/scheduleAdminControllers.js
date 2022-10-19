@@ -805,8 +805,8 @@ const getCarStatusListOfTrips = async (req, res, next) => {
                                 LEFT JOIN user as us ON us.idUser = sc.idUser
                                 LEFT JOIN user as dr ON dr.idUser = sc.idDriver
                                 LEFT JOIN 
-                                    (SELECT idSchedule, SUM(IF(isReceiveCar = '1', 1, 0)) as totalBrokenPartsBeforeTrip, 
-                                     SUM(IF(isReceiveCar = '0', 1, 0)) as totalBrokenPartsAfterTrip
+                                    (SELECT idSchedule, SUM(IF(isBeforeCarRuns = '1', 1, 0)) as totalBrokenPartsBeforeTrip, 
+                                     SUM(IF(isBeforeCarRuns = '0', 1, 0)) as totalBrokenPartsAfterTrip
                                     FROM broken_car_parts
                                     GROUP BY idSchedule) as bcp 
                                     ON bcp.idSchedule = sc.idSchedule
@@ -940,8 +940,8 @@ const getCarStatusListOfTrips = async (req, res, next) => {
                             LEFT JOIN user as dr ON dr.idUser = sc.idDriver
                             LEFT JOIN
                                 (SELECT idSchedule,
-                                SUM(IF(isReceiveCar = '1', 1, 0)) as totalBrokenPartsBeforeTrip,
-                                SUM(IF(isReceiveCar = '0', 1, 0)) as totalBrokenPartsAfterTrip
+                                SUM(IF(isBeforeCarRuns = '1', 1, 0)) as totalBrokenPartsBeforeTrip,
+                                SUM(IF(isBeforeCarRuns = '0', 1, 0)) as totalBrokenPartsAfterTrip
                                 FROM broken_car_parts
                                 GROUP BY idSchedule) as bcp
                                 ON bcp.idSchedule = sc.idSchedule
@@ -980,6 +980,108 @@ const getCarStatusListOfTrips = async (req, res, next) => {
     }
 };
 
+const getScheduleBrokenCarParts = async (req, res) => {
+    let { idSchedule } = req.body;
+    let data = { ...Constants.ResultData };
+
+    if (req.userToken) {
+        console.log("idSchedule", idSchedule);
+        const sql = `SELECT isCarFailBeforeRun, isCarFailAfterRun
+                    FROM schedule
+                    WHERE idSchedule = ?`;
+        const result = await executeQuery(db, sql, idSchedule);
+        if (!result) {
+            data.status = Constants.ApiCode.BAD_REQUEST;
+            data.message = Strings.Common.ERROR;
+            res.status(200).send(data);
+        } else {
+            if (result.length > 0) {
+                let tempObject = {
+                    beforeCarRuns: {
+                        isCarBroken: false,
+                        brokenCarParts: [],
+                    },
+                    afterCarRuns: { isCarBroken: false, brokenCarParts: [] },
+                };
+                let errorGetData = false;
+                // CAR PARTS BROKEN BEFORE RUN
+                if (result[0].isCarFailBeforeRun == "1") {
+                    const sqlBeforeRun = `SELECT 
+                                bcp.image, bcp.comment, cp.name as nameBrokenCarParts
+                            FROM broken_car_parts as bcp
+                            LEFT JOIN car_parts as cp ON cp.idCarParts = bcp.idCarParts
+                            WHERE bcp.idSchedule = ? AND isBeforeCarRuns = 1`;
+                    const resultBrokenBeforeRun = await executeQuery(
+                        db,
+                        sqlBeforeRun,
+                        idSchedule
+                    );
+                    if (
+                        !resultBrokenBeforeRun ||
+                        resultBrokenBeforeRun.length <= 0
+                    ) {
+                        errorGetData = true;
+                    } else {
+                        tempObject.beforeCarRuns.isCarBroken = true;
+                        tempObject.beforeCarRuns.brokenCarParts = [
+                            ...resultBrokenBeforeRun,
+                        ];
+                    }
+                } else {
+                    tempObject.beforeCarRuns.isCarBroken = false;
+                }
+
+                // CAR PARTS BROKEN AFTER RUN
+                if (result[0].isCarFailAfterRun == "1") {
+                    const sqlAfterRun = `SELECT 
+                                bcp.image, bcp.comment, cp.name as nameBrokenCarParts
+                            FROM broken_car_parts as bcp
+                            LEFT JOIN car_parts as cp ON cp.idCarParts = bcp.idCarParts
+                            WHERE bcp.idSchedule = ? AND isBeforeCarRuns = 0`;
+                    const resultBrokenAfterRun = await executeQuery(
+                        db,
+                        sqlAfterRun,
+                        idSchedule
+                    );
+                    if (
+                        !resultBrokenAfterRun ||
+                        resultBrokenAfterRun.length <= 0
+                    ) {
+                        errorGetData = true;
+                    } else {
+                        tempObject.afterCarRuns.isCarBroken = true;
+                        tempObject.afterCarRuns.brokenCarParts = [
+                            ...resultBrokenAfterRun,
+                        ];
+                    }
+                } else {
+                    tempObject.afterCarRuns.isCarBroken = false;
+                }
+
+                // CHECK ERROR
+                if (errorGetData) {
+                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                    data.message = Strings.Common.ERROR;
+                    res.status(200).send(data);
+                } else {
+                    data.status = Constants.ApiCode.OK;
+                    data.message = Strings.Common.SUCCESS;
+                    data.data = tempObject;
+                    res.status(200).send(data);
+                }
+            } else {
+                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                data.message = Strings.Common.ERROR;
+                res.status(200).send(data);
+            }
+        }
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
+
 module.exports = {
     getAdminScheduleList,
     getDriverListForSchedule,
@@ -991,4 +1093,5 @@ module.exports = {
     changeCarSchedule,
     sendNotificationEmailChangeCarSchedule,
     getCarStatusListOfTrips,
+    getScheduleBrokenCarParts,
 };
