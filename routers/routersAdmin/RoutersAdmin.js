@@ -29,7 +29,7 @@ router.post(
     "/updateSchedulePending",
     authenticationControllers.authenticationAdmin,
     scheduleAdminControllers.updateSchedulePending,
-    scheduleAdminControllers.sendNotificationEmailUpdateSchedulePeding,
+    scheduleAdminControllers.sendNotificationEmailUpdateSchedulePeding
 );
 
 router.post(
@@ -48,7 +48,7 @@ router.post(
     "/changeCarSchedule",
     authenticationControllers.authenticationAdmin,
     scheduleAdminControllers.changeCarSchedule,
-    scheduleAdminControllers.sendNotificationEmailChangeCarSchedule,
+    scheduleAdminControllers.sendNotificationEmailChangeCarSchedule
 );
 
 // CAR ADMIN
@@ -91,7 +91,7 @@ router.post(
     imageAdminControllers.uploadImageToFirebase,
     carAdminControllers.updateCar,
     carAdminControllers.updateCarLicense,
-    imageAdminControllers.deleteImageFromFirebase,
+    imageAdminControllers.deleteImageFromFirebase
 );
 
 // TRIP
@@ -105,6 +105,12 @@ router.post(
     "/getScheduleBrokenCarParts",
     authenticationControllers.authenticationAdmin,
     scheduleAdminControllers.getScheduleBrokenCarParts
+);
+
+router.post(
+    "/getDriverListForFilter",
+    authenticationControllers.authenticationAdmin,
+    scheduleAdminControllers.getDriverListForFilter
 );
 
 // DRIVER
