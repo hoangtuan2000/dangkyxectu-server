@@ -45,7 +45,7 @@ const getDriverList = async (req, res) => {
                     WHERE idDriver IS NOT NULL
                     GROUP BY idDriver) as trip ON trip.idDriver = dr.idUser
                 LEFT JOIN 
-                    (SELECT sc.*, AVG(rv.starNumber) as averageStar
+                    (SELECT sc.*, ROUND(AVG(rv.starNumber)) as averageStar
                     FROM review as rv
                     RIGHT JOIN
                         (SELECT dr.idUser as idDriver, sc.idSchedule
@@ -115,6 +115,22 @@ const getDriverList = async (req, res) => {
                 conditionSql += ` AND (trip.numberOfTrips = ${numberOfTrip}) `;
             }
 
+            if (!helper.isNullOrEmpty(codeDriver)) {
+                conditionSql += ` AND (dr.code = '${codeDriver}') `;
+            }
+
+            if (!helper.isNullOrEmpty(fullNameDriver)) {
+                conditionSql += ` AND (dr.fullName  LIKE '%${fullNameDriver}%') `;
+            }
+
+            if (!helper.isNullOrEmpty(emailDriver)) {
+                conditionSql += ` AND (dr.email  LIKE '%${emailDriver}%') `;
+            }
+
+            if (!helper.isNullOrEmpty(phoneDriver)) {
+                conditionSql += ` AND (dr.phone  LIKE '%${phoneDriver}%') `;
+            }
+
             const resultExecuteQuery = await executeQuery(
                 db,
                 `${sqlExecuteQuery} ${conditionSql}`
@@ -141,7 +157,7 @@ const getDriverList = async (req, res) => {
                                 WHERE idDriver IS NOT NULL
                                 GROUP BY idDriver) as trip ON trip.idDriver = dr.idUser
                                 LEFT JOIN 
-                                (SELECT sc.*, AVG(rv.starNumber) as averageStar
+                                (SELECT sc.*, ROUND(AVG(rv.starNumber)) as averageStar
                                 FROM review as rv
                                 RIGHT JOIN
                                     (SELECT dr.idUser as idDriver, sc.idSchedule
@@ -154,7 +170,9 @@ const getDriverList = async (req, res) => {
                                     ON sc.idSchedule = rv.idSchedule
                                 GROUP BY sc.idDriver) as avgRv
                                 ON avgRv.idDriver = dr.idUser
-                            WHERE idRole = ${Constants.RoleCode.DRIVER}
+                            WHERE idRole = ${
+                                Constants.RoleCode.DRIVER
+                            }  ${conditionSql}
                             ORDER BY dr.code
                             LIMIT ${
                                 limitEntry * page - limitEntry
