@@ -120,4 +120,10 @@ router.post(
     driverAdminControllers.getDriverList
 );
 
+router.post(
+    "/addDriver",
+    authenticationControllers.authenticationAdmin,
+    driverAdminControllers.addDriver
+);
+
 module.exports = router;

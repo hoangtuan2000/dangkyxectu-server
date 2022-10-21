@@ -2,6 +2,7 @@ const { executeQuery } = require("../../common/function");
 const { helper } = require("../../common/helper");
 const { Constants } = require("../../constants/Constants");
 const { Strings } = require("../../constants/Strings");
+const { ldapClient } = require("../../middlewares/ldap/ldapConfig");
 const db = require("../../models/index");
 
 const getDriverList = async (req, res) => {
@@ -202,4 +203,35 @@ const getDriverList = async (req, res) => {
     }
 };
 
-module.exports = { getDriverList };
+const addDriver = async (req, res) => {
+    let { code } = req.body;
+    let data = { ...Constants.ResultData };
+
+    ldapClient.bind(`uid=admin,ou=system`, "secret", function (err) {
+        // error authentication ldap server
+        if (err) {
+            console.log("err", err);
+        }
+        // get data user => token
+        else {
+            var entry = {
+                sn: "fullname",
+                objectclass: "inetOrgPerson",
+                userPassword: "testPass+",
+            };
+            ldapClient.add(
+                "cn=B987654,ou=users,ou=system",
+                entry,
+                function (err) {
+                    if (err) {
+                        console.log("err in new user " + err);
+                    } else {
+                        console.log("added user");
+                    }
+                }
+            );
+        }
+    });
+};
+
+module.exports = { getDriverList, addDriver };
