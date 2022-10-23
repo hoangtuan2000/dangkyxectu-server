@@ -4,6 +4,7 @@ const ldapClient = require("../../middlewares/ldap/ldapConfig");
 const jwtConfig = require("../../middlewares/jwt/jwtConfig");
 const passport = require("passport");
 const passportConfig = require("../../middlewares/passport/passport");
+require("dotenv").config();
 
 const { Constants } = require("../../constants/Constants");
 const { Strings } = require("../../constants/Strings");
@@ -12,7 +13,7 @@ const login = async (req, res) => {
     const { code, password } = req.body;
     let data = { ...Constants.ResultData };
     ldapClient.ldapClient.bind(
-        `cn=${code},ou=users,ou=system`,
+        `cn=${code},${process.env.DN_LDAP_COMMON}`,
         password,
         function (err) {
             // error authentication ldap server
@@ -134,7 +135,7 @@ const getUserToken = async (req, res, next) => {
                 } else {
                     if (result.length > 0) {
                         req.userToken = result[0];
-                        next()
+                        next();
                     } else {
                         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
                         data.message = Strings.Common.ERROR;
@@ -153,8 +154,7 @@ const authenticationAdmin = async (req, res, next) => {
             data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
             data.message = Strings.Common.ERROR;
             res.status(200).send(data);
-        } 
-        else if (info && info.name == "TokenExpiredError") {
+        } else if (info && info.name == "TokenExpiredError") {
             data.status = Constants.ApiCode.UNAUTHORIZED;
             data.message = Strings.Common.YOUR_LOGIN_SESSION_EXPIRED;
             res.status(200).send(data);
@@ -166,8 +166,7 @@ const authenticationAdmin = async (req, res, next) => {
             data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
             data.message = Strings.Common.USER_NOT_EXIST;
             res.status(200).send(data);
-        }
-         else {
+        } else {
             const userID = user.sub;
             const sql = `SELECT idUser FROM user WHERE code = ? AND idRole = ${Constants.RoleCode.ADMIN}`;
             db.query(sql, [userID], (err, result) => {
@@ -178,7 +177,7 @@ const authenticationAdmin = async (req, res, next) => {
                 } else {
                     if (result.length > 0) {
                         req.userToken = result[0];
-                        next()
+                        next();
                     } else {
                         data.status = Constants.ApiCode.FORBIDDEN;
                         data.message = Strings.Common.NOT_PERMISSION_ACCESS;
@@ -197,8 +196,7 @@ const authenticationDriver = async (req, res, next) => {
             data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
             data.message = Strings.Common.ERROR;
             res.status(200).send(data);
-        } 
-        else if (info && info.name == "TokenExpiredError") {
+        } else if (info && info.name == "TokenExpiredError") {
             data.status = Constants.ApiCode.UNAUTHORIZED;
             data.message = Strings.Common.YOUR_LOGIN_SESSION_EXPIRED;
             res.status(200).send(data);
@@ -210,8 +208,7 @@ const authenticationDriver = async (req, res, next) => {
             data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
             data.message = Strings.Common.USER_NOT_EXIST;
             res.status(200).send(data);
-        }
-         else {
+        } else {
             const userID = user.sub;
             const sql = `SELECT idUser FROM user WHERE code = ? AND idRole = ${Constants.RoleCode.DRIVER}`;
             db.query(sql, [userID], (err, result) => {
@@ -222,7 +219,7 @@ const authenticationDriver = async (req, res, next) => {
                 } else {
                     if (result.length > 0) {
                         req.userToken = result[0];
-                        next()
+                        next();
                     } else {
                         data.status = Constants.ApiCode.FORBIDDEN;
                         data.message = Strings.Common.NOT_PERMISSION_ACCESS;
@@ -241,8 +238,7 @@ const authenticationUser = async (req, res, next) => {
             data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
             data.message = Strings.Common.ERROR;
             res.status(200).send(data);
-        } 
-        else if (info && info.name == "TokenExpiredError") {
+        } else if (info && info.name == "TokenExpiredError") {
             data.status = Constants.ApiCode.UNAUTHORIZED;
             data.message = Strings.Common.YOUR_LOGIN_SESSION_EXPIRED;
             res.status(200).send(data);
@@ -254,8 +250,7 @@ const authenticationUser = async (req, res, next) => {
             data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
             data.message = Strings.Common.USER_NOT_EXIST;
             res.status(200).send(data);
-        }
-         else {
+        } else {
             const userID = user.sub;
             const sql = `SELECT idUser FROM user WHERE code = ? AND idRole = ${Constants.RoleCode.USER}`;
             db.query(sql, [userID], (err, result) => {
@@ -266,7 +261,7 @@ const authenticationUser = async (req, res, next) => {
                 } else {
                     if (result.length > 0) {
                         req.userToken = result[0];
-                        next()
+                        next();
                     } else {
                         data.status = Constants.ApiCode.FORBIDDEN;
                         data.message = Strings.Common.NOT_PERMISSION_ACCESS;
@@ -284,5 +279,5 @@ module.exports = {
     getUserToken,
     authenticationAdmin,
     authenticationDriver,
-    authenticationUser
+    authenticationUser,
 };

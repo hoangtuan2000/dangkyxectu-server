@@ -1,9 +1,11 @@
+const { async } = require("@firebase/util");
 const { executeQuery } = require("../../common/function");
 const { helper } = require("../../common/helper");
 const { Constants } = require("../../constants/Constants");
 const { Strings } = require("../../constants/Strings");
 const { ldapClient } = require("../../middlewares/ldap/ldapConfig");
 const db = require("../../models/index");
+require("dotenv").config();
 
 const getDriverList = async (req, res) => {
     let {
@@ -203,35 +205,154 @@ const getDriverList = async (req, res) => {
     }
 };
 
-const addDriver = async (req, res) => {
-    let { code } = req.body;
+const createDriver = async (req, res) => {
+    let {
+        idDriverLicense,
+        fullName,
+        code,
+        email,
+        password,
+        phone,
+        driverLicenseExpirationDate,
+        address,
+        idWard,
+    } = req.body;
     let data = { ...Constants.ResultData };
 
-    ldapClient.bind(`uid=admin,ou=system`, "secret", function (err) {
-        // error authentication ldap server
-        if (err) {
-            console.log("err", err);
-        }
-        // get data user => token
-        else {
-            var entry = {
-                sn: "fullname",
-                objectclass: "inetOrgPerson",
-                userPassword: "testPass+",
-            };
-            ldapClient.add(
-                "cn=B987654,ou=users,ou=system",
-                entry,
-                function (err) {
-                    if (err) {
-                        console.log("err in new user " + err);
-                    } else {
-                        console.log("added user");
-                    }
-                }
+    if (req.userToken) {
+        if (!idDriverLicense || !driverLicenseExpirationDate) {
+            data.status = Constants.ApiCode.BAD_REQUEST;
+            data.message = Strings.Common.NOT_ENOUGH_DATA;
+            res.status(200).send(data);
+        } else if (!helper.isTimeStamp(driverLicenseExpirationDate)) {
+            data.status = Constants.ApiCode.BAD_REQUEST;
+            data.message = Strings.Common.INVALID_DATA;
+            res.status(200).send(data);
+        } else {
+            let currentDate = helper.formatTimeStamp(new Date().getTime());
+            const sql = `INSERT INTO user(fullName, code, password, email, phone, address, driverLicenseExpirationDate,
+                    createdAt,  idDriverLicense, idRole, idWard, idUserStatus) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`;
+
+            driverLicenseExpirationDate = helper.formatTimeStamp(
+                driverLicenseExpirationDate
             );
+            fullName = helper.removeVietnameseAccents(fullName);
+            db.beginTransaction(function (err) {
+                if (err) {
+                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                    data.message = Strings.Common.ERROR;
+                    res.status(200).send(data);
+                }
+                db.query(
+                    sql,
+                    [
+                        fullName,
+                        code,
+                        password,
+                        email,
+                        phone,
+                        address,
+                        driverLicenseExpirationDate,
+                        currentDate,
+                        idDriverLicense,
+                        Constants.RoleCode.DRIVER,
+                        idWard,
+                        Constants.UserStatusCode.WORKING,
+                    ],
+                    function (error, results, fields) {
+                        if (error) {
+                            return db.rollback(function () {
+                                data.status =
+                                    Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                                data.message = Strings.Common.ERROR;
+                                res.status(200).send(data);
+                            });
+                        } else {
+                            if (results.affectedRows > 0) {
+                                db.commit(async function (err) {
+                                    if (err) {
+                                        return db.rollback(function () {
+                                            data.status =
+                                                Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                                            data.message = Strings.Common.ERROR;
+                                            res.status(200).send(data);
+                                        });
+                                    } else {
+                                        const resultAddUserLdap =
+                                            await addDriverLdap(
+                                                fullName,
+                                                code,
+                                                password
+                                            );
+                                        if (resultAddUserLdap) {
+                                            data.status = Constants.ApiCode.OK;
+                                            data.message =
+                                                Strings.Common.SUCCESS;
+                                            res.status(200).send(data);
+                                        } else {
+                                            return db.rollback(function () {
+                                                data.status =
+                                                    Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                                                data.message =
+                                                    Strings.Common.ERROR;
+                                                res.status(200).send(data);
+                                            });
+                                        }
+                                    }
+                                });
+                            } else {
+                                data.status =
+                                    Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                                data.message = Strings.Common.ERROR;
+                                res.status(200).send(data);
+                            }
+                        }
+                    }
+                );
+            });
         }
-    });
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
 };
 
-module.exports = { getDriverList, addDriver };
+const addDriverLdap = async (fullName, code, password) => {
+    const result = await ldapClient.bind(
+        process.env.DN_LDAP_ADMIN,
+        process.env.SECRET_LDAP_ADMIN,
+        function (err) {
+            // error authentication ldap server
+            if (err) {
+                console.log("err addDriverLdap 1", err);
+                return false;
+            }
+            // get data user => token
+            else {
+                var entry = {
+                    sn: `${fullName}`,
+                    objectclass: `${process.env.OBJECT_CLASS_LDAP}`,
+                    userPassword: `${password}`,
+                };
+                ldapClient.add(
+                    `cn=${code},ou=users,ou=system`,
+                    entry,
+                    function (err) {
+                        if (err) {
+                            console.log("err addDriverLdap 2" + err);
+                            return false;
+                        } else {
+                            console.log("added user");
+                            return true;
+                        }
+                    }
+                );
+            }
+        }
+    );
+
+    return result;
+};
+
+module.exports = { getDriverList, createDriver };

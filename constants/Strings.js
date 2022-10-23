@@ -49,6 +49,13 @@ const Strings = {
         DATA_IS_UNCHANGED: "Dữ Liệu Không Thay Đổi",
         CURRENTLY_UNABLE_TO_UPDATE: "Hiện Không Thể Cập Nhật",
         SUPPORT_LENGTH_LICENSE_PLATES: `Biển Số Từ ${Constants.Common.CHARACTERS_MIN_LENGTH_LICENSE_PLATES} - ${Constants.Common.CHARACTERS_MAX_LENGTH_LICENSE_PLATES} Ký Tự`,
+        CODE_USER_ALREADY_EXISTS: "Mã Người Dùng Đã Tồn Tại",
+        EMAIL_USER_ALREADY_EXISTS: "Email Người Dùng Đã Tồn Tại",
+        SUPPORT_FULL_NAME: `Tên Từ ${Constants.Common.MIN_LENGTH_FULL_NAME} - ${Constants.Common.MAX_LENGTH_FULL_NAME} Ký Tự`,
+        SUPPORT_CODE: `Mã Gồm ${Constants.Common.MAX_LENGTH_CODE} Ký Tự`,
+        SUPPORT_EMAIL: `Email Không Đúng Định Dạng`,
+        SUPPORT_PASSWORD: `Mật Khẩu Từ ${Constants.Common.MIN_LENGTH_PASSWORD} - ${Constants.Common.MAX_LENGTH_PASSWORD} Ký Tự`,
+        SUPPORT_PHONE: `Số Điện Thoại Không Đúng Định Dạng`,
     },
 };
 

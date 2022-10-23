@@ -1,4 +1,5 @@
 const authenticationControllers = require("../../controllers/controllersGlobal/authenticationControllers");
+const userControllers = require("../../controllers/controllersGlobal/userControllers");
 const scheduleAdminControllers = require("../../controllers/controllersAdmin/scheduleAdminControllers");
 const scheduleControllers = require("../../controllers/controllersGlobal/scheduleControllers");
 const carAdminControllers = require("../../controllers/controllersAdmin/carAdminControllers");
@@ -121,9 +122,12 @@ router.post(
 );
 
 router.post(
-    "/addDriver",
+    "/createDriver",
     authenticationControllers.authenticationAdmin,
-    driverAdminControllers.addDriver
+    userControllers.validateDataCreateUser,
+    userControllers.checkCodeUserExist,
+    userControllers.checkEmailUserExist,
+    driverAdminControllers.createDriver
 );
 
 module.exports = router;
