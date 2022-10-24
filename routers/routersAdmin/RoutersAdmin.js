@@ -1,6 +1,7 @@
 const authenticationControllers = require("../../controllers/controllersGlobal/authenticationControllers");
 const userControllers = require("../../controllers/controllersGlobal/userControllers");
 const scheduleAdminControllers = require("../../controllers/controllersAdmin/scheduleAdminControllers");
+const analysisAdminControllers = require("../../controllers/controllersAdmin/analysisAdminControllers");
 const scheduleControllers = require("../../controllers/controllersGlobal/scheduleControllers");
 const carAdminControllers = require("../../controllers/controllersAdmin/carAdminControllers");
 const driverAdminControllers = require("../../controllers/controllersAdmin/driverAdminControllers");
@@ -145,6 +146,17 @@ router.post(
     driverAdminControllers.updateDriver
 );
 
+// ANALYSIS
+router.post(
+    "/getAnalysisTotalCommon",
+    authenticationControllers.authenticationAdmin,
+    analysisAdminControllers.getAnalysisTotalCommon
+);
 
+router.post(
+    "/getTotalNumberOfTripsOverTime",
+    authenticationControllers.authenticationAdmin,
+    analysisAdminControllers.getTotalNumberOfTripsOverTime
+);
 
 module.exports = router;
