@@ -211,7 +211,7 @@ const createDriver = async (req, res) => {
         fullName,
         code,
         email,
-        password,
+        pass,
         phone,
         driverLicenseExpirationDate,
         address,
@@ -248,7 +248,7 @@ const createDriver = async (req, res) => {
                     [
                         fullName,
                         code,
-                        password,
+                        pass,
                         email,
                         phone,
                         address,
@@ -282,7 +282,7 @@ const createDriver = async (req, res) => {
                                             await addDriverLdap(
                                                 fullName,
                                                 code,
-                                                password
+                                                pass
                                             );
                                         if (resultAddUserLdap) {
                                             data.status = Constants.ApiCode.OK;

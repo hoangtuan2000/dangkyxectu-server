@@ -61,7 +61,7 @@ const checkEmailUserExist = async (req, res, next) => {
 };
 
 const validateDataCreateUser = async (req, res, next) => {
-    let { fullName, code, email, password, phone, address, idWard } = req.body;
+    let { fullName, code, email, pass, phone, address, idWard } = req.body;
     let data = { ...Constants.ResultData };
 
     let errorData = false;
@@ -71,7 +71,7 @@ const validateDataCreateUser = async (req, res, next) => {
         helper.isNullOrEmpty(fullName) ||
         helper.isNullOrEmpty(code) ||
         helper.isNullOrEmpty(email) ||
-        helper.isNullOrEmpty(password) ||
+        helper.isNullOrEmpty(pass) ||
         helper.isNullOrEmpty(phone) ||
         helper.isNullOrEmpty(address) ||
         helper.isNullOrEmpty(idWard)
@@ -113,7 +113,7 @@ const validateDataCreateUser = async (req, res, next) => {
         // CHECK PASSWORD
         if (
             !helper.isValidStringBetweenMinMaxLength(
-                password,
+                pass,
                 Constants.Common.MIN_LENGTH_PASSWORD,
                 Constants.Common.MAX_LENGTH_PASSWORD
             )
