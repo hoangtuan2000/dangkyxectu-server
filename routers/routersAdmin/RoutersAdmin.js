@@ -122,6 +122,12 @@ router.post(
 );
 
 router.post(
+    "/getDriverToUpdate",
+    authenticationControllers.authenticationAdmin,
+    driverAdminControllers.getDriverToUpdate
+);
+
+router.post(
     "/createDriver",
     authenticationControllers.authenticationAdmin,
     userControllers.validateDataCreateUser,
@@ -129,5 +135,16 @@ router.post(
     userControllers.checkEmailUserExist,
     driverAdminControllers.createDriver
 );
+
+router.post(
+    "/updateDriver",
+    authenticationControllers.authenticationAdmin,
+    userControllers.validateDataUpdateUser,
+    userControllers.checkCodeUserUpdateExist,
+    userControllers.checkEmailUserUpdateExist,
+    driverAdminControllers.updateDriver
+);
+
+
 
 module.exports = router;
