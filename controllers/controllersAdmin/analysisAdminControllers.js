@@ -59,10 +59,11 @@ const getAnalysisTotalCommon = async (req, res) => {
 };
 
 const getTotalNumberOfTripsOverTime = async (req, res) => {
+    let { startDate, endDate } = req.body;
     let data = { ...Constants.ResultData };
 
     if (req.userToken) {
-        const sql = `SELECT COUNT(sc.idSchedule) as totalSchedule, UNIX_TIMESTAMP(dateRange.date) as date
+        let sql = `SELECT COUNT(sc.idSchedule) as totalSchedule, UNIX_TIMESTAMP(dateRange.date) as date
             FROM 
                 (SELECT * FROM schedule 
                 WHERE idScheduleStatus IN (${Constants.ScheduleStatusCode.MOVING}, 
@@ -70,6 +71,28 @@ const getTotalNumberOfTripsOverTime = async (req, res) => {
             RIGHT JOIN (SELECT CURRENT_DATE() - INTERVAL seq DAY as date FROM seq_0_to_7) as dateRange
             ON DATE(FROM_UNIXTIME(sc.startDate)) = dateRange.date
             GROUP BY dateRange.date`;
+
+        if (startDate && endDate) {
+            const date1 = new Date(parseInt(startDate));
+            const date2 = new Date(parseInt(endDate));
+            const diffTime = Math.abs(date2 - date1);
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            console.log("date1", date1);
+            console.log("date2", date2);
+            console.log("diffTime", diffTime);
+            console.log("diffDays", diffDays);
+            startDate = helper.formatTimeStamp(startDate);
+            endDate = helper.formatTimeStamp(endDate);
+            sql = `SELECT COUNT(sc.idSchedule) as totalSchedule, UNIX_TIMESTAMP(dateRange.date) as date
+            FROM 
+                (SELECT * FROM schedule 
+                WHERE idScheduleStatus IN (${Constants.ScheduleStatusCode.MOVING}, 
+                    ${Constants.ScheduleStatusCode.COMPLETE}, ${Constants.ScheduleStatusCode.RECEIVED})) as sc
+            RIGHT JOIN (SELECT DATE(FROM_UNIXTIME(${endDate})) - INTERVAL seq DAY as date FROM seq_0_to_${diffDays}) as dateRange
+            ON DATE(FROM_UNIXTIME(sc.startDate)) = dateRange.date
+            GROUP BY dateRange.date`;
+        }
+
         db.query(sql, (err, result) => {
             if (err) {
                 data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
