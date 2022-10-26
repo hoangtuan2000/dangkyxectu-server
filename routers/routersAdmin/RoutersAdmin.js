@@ -165,4 +165,10 @@ router.post(
     analysisAdminControllers.getDataTotalNumberOfTripsOverTime
 );
 
+router.post(
+    "/getAnalysisDriverLicense",
+    authenticationControllers.authenticationAdmin,
+    analysisAdminControllers.getAnalysisDriverLicense
+);
+
 module.exports = router;

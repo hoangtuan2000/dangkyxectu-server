@@ -346,8 +346,36 @@ const getDataTotalNumberOfTripsOverTime = async (req, res) => {
     }
 };
 
+const getAnalysisDriverLicense = async (req, res) => {
+    let data = { ...Constants.ResultData };
+
+    if (req.userToken) {
+        let sql = `SELECT COUNT(dr.idUser) as totalDriversHasDriverLicense, dl.name as nameDriverLicense
+                FROM driver_license as dl
+                LEFT JOIN user as dr ON dr.idDriverLicense = dl.idDriverLicense
+                GROUP BY dl.idDriverLicense`;
+        db.query(sql, (err, result) => {
+            if (err) {
+                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                data.message = Strings.Common.ERROR_SERVER;
+                res.status(200).send(data);
+            } else {
+                data.status = Constants.ApiCode.OK;
+                data.message = Strings.Common.SUCCESS;
+                data.data = [...result];
+                res.status(200).send(data);
+            }
+        });
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
+
 module.exports = {
     getAnalysisTotalCommon,
     getTotalNumberOfTripsOverTime,
     getDataTotalNumberOfTripsOverTime,
+    getAnalysisDriverLicense,
 };
