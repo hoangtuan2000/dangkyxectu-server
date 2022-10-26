@@ -159,4 +159,10 @@ router.post(
     analysisAdminControllers.getTotalNumberOfTripsOverTime
 );
 
+router.post(
+    "/getDataTotalNumberOfTripsOverTime",
+    authenticationControllers.authenticationAdmin,
+    analysisAdminControllers.getDataTotalNumberOfTripsOverTime
+);
+
 module.exports = router;

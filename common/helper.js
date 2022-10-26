@@ -142,6 +142,15 @@ const helper = {
         str = str.replace(/Đ/g, "D");
         return str;
     },
+
+    diffDaysOfTwoTimeStamp: (startDate, endDate) => {
+        const date1 = new Date(parseInt(startDate));
+        const date2 = new Date(parseInt(endDate));
+        // DATE DIFF => SELECT DATE RANGE
+        const diffTime = Math.abs(date2 - date1);
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays;
+    },
 };
 
 module.exports = {
