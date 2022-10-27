@@ -373,9 +373,158 @@ const getAnalysisDriverLicense = async (req, res) => {
     }
 };
 
+const getDataAnalysisDriverLicense = async (req, res) => {
+    let {
+        page,
+        limitEntry,
+        driverLicense,
+        userStatus,
+        haveDriver,
+        codeDriver,
+        fullNameDriver,
+        emailDriver,
+        phoneDriver,
+        address,
+        idWard,
+    } = req.body;
+    page = parseInt(page) || Constants.Common.PAGE;
+    limitEntry = parseInt(limitEntry) || Constants.Common.LIMIT_ENTRY;
+
+    let data = { ...Constants.ResultData };
+    let dataList = { ...Constants.ResultDataList };
+
+    if (req.userToken) {
+        if (
+            (driverLicense && !helper.isArray(driverLicense)) ||
+            (userStatus && !helper.isArray(userStatus))
+        ) {
+            data.status = Constants.ApiCode.BAD_REQUEST;
+            data.message = Strings.Common.INVALID_DATA;
+            res.status(200).send(data);
+        } else {
+            let sqlExecuteQuery = `SELECT COUNT(dl.idDriverLicense) as sizeQuerySnapshot 
+            FROM driver_license as dl
+            LEFT JOIN user as dr ON dr.idDriverLicense = dl.idDriverLicense
+            LEFT JOIN user_status as uss ON uss.idUserStatus = dr.idUserStatus
+            WHERE 1 = 1 `;
+            // CHECK CONDITION SQL
+            let conditionSql = "";
+            if (driverLicense && driverLicense.length > 0) {
+                let sqlTemp = "";
+                for (let i = 0; i < driverLicense.length; i++) {
+                    if (i == 0) {
+                        if (driverLicense.length > 1) {
+                            sqlTemp += ` AND ( dl.idDriverLicense = '${driverLicense[i]}' `;
+                        } else {
+                            sqlTemp += ` AND ( dl.idDriverLicense = '${driverLicense[i]}' ) `;
+                        }
+                    } else if (i == driverLicense.length - 1) {
+                        sqlTemp += ` OR dl.idDriverLicense = '${driverLicense[i]}' ) `;
+                    } else {
+                        sqlTemp += ` OR dl.idDriverLicense = '${driverLicense[i]}' `;
+                    }
+                }
+                conditionSql += sqlTemp;
+            }
+
+            if (userStatus && userStatus.length > 0) {
+                let sqlTemp = "";
+                for (let i = 0; i < userStatus.length; i++) {
+                    if (i == 0) {
+                        if (userStatus.length > 1) {
+                            sqlTemp += ` AND ( uss.idUserStatus = '${userStatus[i]}' `;
+                        } else {
+                            sqlTemp += ` AND ( uss.idUserStatus = '${userStatus[i]}' ) `;
+                        }
+                    } else if (i == userStatus.length - 1) {
+                        sqlTemp += ` OR uss.idUserStatus = '${userStatus[i]}' ) `;
+                    } else {
+                        sqlTemp += ` OR uss.idUserStatus = '${userStatus[i]}' `;
+                    }
+                }
+                conditionSql += sqlTemp;
+            }
+
+            if (!helper.isNullOrEmpty(haveDriver)) {
+                if (helper.convertStringBooleanToBoolean(haveDriver)) {
+                    conditionSql += ` AND (dr.idUser IS NOT NULL) `;
+                } else {
+                    conditionSql += ` AND (dr.idUser IS NULL) `;
+                }
+            }
+
+            if (!helper.isNullOrEmpty(codeDriver)) {
+                conditionSql += ` AND (dr.code LIKE '%${codeDriver}%') `;
+            }
+            if (!helper.isNullOrEmpty(fullNameDriver)) {
+                conditionSql += ` AND (dr.fullName LIKE '%${fullNameDriver}%') `;
+            }
+
+            if (!helper.isNullOrEmpty(emailDriver)) {
+                conditionSql += ` AND (dr.email LIKE '%${emailDriver}%') `;
+            }
+
+            if (!helper.isNullOrEmpty(phoneDriver)) {
+                conditionSql += ` AND (dr.phone LIKE '%${phoneDriver}%') `;
+            }
+
+            if (!helper.isNullOrEmpty(address)) {
+                conditionSql += ` AND (dr.address LIKE '%${address}%') `;
+            }
+
+            if (!helper.isNullOrEmpty(idWard)) {
+                conditionSql += ` AND (dr.idWard = '${idWard}') `;
+            }
+
+            const resultExecuteQuery = await executeQuery(
+                db,
+                `${sqlExecuteQuery} ${conditionSql}`
+            );
+
+            if (!resultExecuteQuery) {
+                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                data.message = Strings.Common.ERROR_GET_DATA;
+                res.status(200).send(data);
+            } else {
+                sql = `SELECT 
+                        dl.idDriverLicense, dl.name as nameDriverLicense,
+                        dr.idUser as idDriver, dr.fullName as fullNameDriver, dr.code as codeDriver,
+                        dr.email as emailDriver, dr.phone as phoneDriver,
+                        uss.idUserStatus, uss.name as nameUserStatus
+                    FROM driver_license as dl
+                    LEFT JOIN user as dr ON dr.idDriverLicense = dl.idDriverLicense
+                    LEFT JOIN user_status as uss ON uss.idUserStatus = dr.idUserStatus
+                    WHERE 1 = 1 ${conditionSql}
+                    LIMIT ${limitEntry * page - limitEntry}, ${limitEntry}`;
+                db.query(sql, (err, result) => {
+                    if (err) {
+                        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                        data.message = Strings.Common.ERROR;
+                        res.status(200).send(data);
+                    } else {
+                        dataList.status = Constants.ApiCode.OK;
+                        dataList.message = Strings.Common.SUCCESS;
+                        dataList.limitEntry = limitEntry;
+                        dataList.page = page;
+                        dataList.sizeQuerySnapshot =
+                            resultExecuteQuery[0].sizeQuerySnapshot;
+                        dataList.data = [...result];
+                        res.status(200).send(dataList);
+                    }
+                });
+            }
+        }
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
+
 module.exports = {
     getAnalysisTotalCommon,
     getTotalNumberOfTripsOverTime,
     getDataTotalNumberOfTripsOverTime,
     getAnalysisDriverLicense,
+    getDataAnalysisDriverLicense,
 };

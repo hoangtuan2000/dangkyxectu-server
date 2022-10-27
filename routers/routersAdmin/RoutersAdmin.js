@@ -171,4 +171,10 @@ router.post(
     analysisAdminControllers.getAnalysisDriverLicense
 );
 
+router.post(
+    "/getDataAnalysisDriverLicense",
+    authenticationControllers.authenticationAdmin,
+    analysisAdminControllers.getDataAnalysisDriverLicense
+);
+
 module.exports = router;
