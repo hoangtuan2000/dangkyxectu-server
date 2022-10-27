@@ -22,6 +22,12 @@ router.post(
 );
 
 router.post(
+    "/getScheduleListOfDriver",
+    authenticationControllers.getUserToken,
+    scheduleAdminControllers.getScheduleListOfDriver
+);
+
+router.post(
     "/getDriverListForSchedule",
     authenticationControllers.getUserToken,
     scheduleAdminControllers.getDriverListForSchedule
@@ -120,6 +126,12 @@ router.post(
     "/getDriverList",
     authenticationControllers.authenticationAdmin,
     driverAdminControllers.getDriverList
+);
+
+router.post(
+    "/getInfoDriver",
+    authenticationControllers.authenticationAdmin,
+    driverAdminControllers.getInfoDriver
 );
 
 router.post(

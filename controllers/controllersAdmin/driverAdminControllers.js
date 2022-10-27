@@ -206,6 +206,69 @@ const getDriverList = async (req, res) => {
     }
 };
 
+const getInfoDriver = async (req, res) => {
+    let { idDriver } = req.body;
+
+    let data = { ...Constants.ResultData };
+
+    if (req.userToken) {
+        const sql = `SELECT
+            avgRv.averageStar,
+            dr.fullName, dr.code, dr.email, dr.phone, 
+            dr.driverLicenseExpirationDate, dr.address,
+            dr.createdAt, dr.updatedAt,
+            userUpdate.idUser as idUserUpdate, userUpdate.fullName as fullNameUserUpdate,
+            userUpdate.code as codeUserUpdate,
+            uss.idUserStatus, uss.name as nameUserStatus,
+            dl.idDriverLicense, dl.name as nameDriverLicense,
+            wa.idWard, wa.name as nameWard, wa.type as typeWard, wa.idDistrict as idDistrictWard,
+            ds.idDistrict, ds.name as nameDistrict, ds.type as typeDistrict, ds.idProvince as idProvinceDistrict,
+            pv.idProvince, pv.name as nameProvince, pv.type as typeProvince
+            FROM user as dr
+            LEFT JOIN user as userUpdate ON userUpdate.idUser = dr.idUserUpdate
+            LEFT JOIN user_status as uss ON uss.idUserStatus = dr.idUserStatus
+            LEFT JOIN driver_license as dl ON dl.idDriverLicense = dr.idDriverLicense
+            LEFT JOIN ward as wa ON wa.idWard = dr.idWard
+            LEFT JOIN district as ds ON ds.idDistrict = wa.idDistrict
+            LEFT JOIN province as pv ON pv.idProvince = ds.idProvince
+            LEFT JOIN 
+                (SELECT sc.*, ROUND(AVG(rv.starNumber)) as averageStar
+                FROM review as rv
+                RIGHT JOIN
+                    (SELECT dr.idUser as idDriver, sc.idSchedule
+                    FROM user as dr
+                    LEFT JOIN schedule as sc ON sc.idDriver = dr.idUser
+                    WHERE idRole = ${Constants.RoleCode.DRIVER} AND dr.idUser = ${idDriver}
+                    AND sc.idScheduleStatus = ${Constants.ScheduleStatusCode.COMPLETE}) as sc
+                ON sc.idSchedule = rv.idSchedule
+                GROUP BY sc.idDriver) as avgRv
+                ON avgRv.idDriver = dr.idUser
+            WHERE dr.idUser = ${idDriver} AND dr.idRole = ${Constants.RoleCode.DRIVER}`;
+        db.query(sql, idDriver, (err, result) => {
+            if (err) {
+                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                data.message = Strings.Common.ERROR;
+                res.status(200).send(data);
+            } else {
+                if (result.length > 0) {
+                    data.status = Constants.ApiCode.OK;
+                    data.message = Strings.Common.SUCCESS;
+                    data.data = [...result];
+                    res.status(200).send(data);
+                } else {
+                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                    data.message = Strings.Common.ERROR_GET_DATA;
+                    res.status(200).send(data);
+                }
+            }
+        });
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
+
 const getDriverToUpdate = async (req, res) => {
     let { idDriver } = req.body;
 
@@ -277,9 +340,10 @@ const createDriver = async (req, res) => {
             data.message = Strings.Common.INVALID_DATA;
             res.status(200).send(data);
         } else {
+            const idUser = req.userToken.idUser;
             let currentDate = helper.formatTimeStamp(new Date().getTime());
             const sql = `INSERT INTO user(fullName, code, email, phone, address, driverLicenseExpirationDate,
-                    createdAt,  idDriverLicense, idRole, idWard, idUserStatus) VALUES (?,?,?,?,?,?,?,?,?,?,?)`;
+                    createdAt,  idDriverLicense, idRole, idWard, idUserStatus, idUserUpdate) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`;
 
             driverLicenseExpirationDate = helper.formatTimeStamp(
                 driverLicenseExpirationDate
@@ -305,6 +369,7 @@ const createDriver = async (req, res) => {
                         Constants.RoleCode.DRIVER,
                         idWard,
                         Constants.UserStatusCode.WORKING,
+                        idUser,
                     ],
                     function (error, results, fields) {
                         if (error) {
@@ -442,6 +507,7 @@ const updateDriver = async (req, res) => {
                     res.status(200).send(data);
                 } else {
                     if (resExecuteQuery.length > 0) {
+                        const idCurrentUser = req.userToken.idUser;
                         const currentDate = helper.formatTimeStamp(
                             new Date().getTime()
                         );
@@ -483,7 +549,7 @@ const updateDriver = async (req, res) => {
                         }
 
                         if (sqlData) {
-                            sql = `UPDATE user SET ${sqlData} updatedAt = ${currentDate} WHERE idUser = ${idUser} AND idRole = ${Constants.RoleCode.DRIVER}`;
+                            sql = `UPDATE user SET ${sqlData} updatedAt = ${currentDate}, idUserUpdate = ${idCurrentUser} WHERE idUser = ${idUser} AND idRole = ${Constants.RoleCode.DRIVER}`;
                         }
 
                         if (sql) {
@@ -691,6 +757,7 @@ const updateSNLdap = async (code, fullName) => {
 
 module.exports = {
     getDriverList,
+    getInfoDriver,
     getDriverToUpdate,
     createDriver,
     updateDriver,
