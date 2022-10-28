@@ -41,16 +41,18 @@ const getDriverScheduleList = async (req, res) => {
             if (status && status.length > 0) {
                 let sqlTemp = "";
                 for (let i = 0; i < status.length; i++) {
-                    if (i == 0) {
-                        if (status.length > 1) {
-                            sqlTemp += ` AND ( sc.idScheduleStatus = '${status[i]}' `;
+                    if (!helper.isNullOrEmpty(status[i])) {
+                        if (i == 0) {
+                            if (status.length > 1) {
+                                sqlTemp += ` AND ( sc.idScheduleStatus = '${status[i]}' `;
+                            } else {
+                                sqlTemp += ` AND ( sc.idScheduleStatus = '${status[i]}' ) `;
+                            }
+                        } else if (i == status.length - 1) {
+                            sqlTemp += ` OR sc.idScheduleStatus = '${status[i]}' ) `;
                         } else {
-                            sqlTemp += ` AND ( sc.idScheduleStatus = '${status[i]}' ) `;
+                            sqlTemp += ` OR sc.idScheduleStatus = '${status[i]}' `;
                         }
-                    } else if (i == status.length - 1) {
-                        sqlTemp += ` OR sc.idScheduleStatus = '${status[i]}' ) `;
-                    } else {
-                        sqlTemp += ` OR sc.idScheduleStatus = '${status[i]}' `;
                     }
                 }
                 conditionSql += sqlTemp;
@@ -58,16 +60,18 @@ const getDriverScheduleList = async (req, res) => {
             if (carType && carType.length > 0) {
                 let sqlTemp = "";
                 for (let i = 0; i < carType.length; i++) {
-                    if (i == 0) {
-                        if (carType.length > 1) {
-                            sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' `;
+                    if (!helper.isNullOrEmpty(carType[i])) {
+                        if (i == 0) {
+                            if (carType.length > 1) {
+                                sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' `;
+                            } else {
+                                sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' ) `;
+                            }
+                        } else if (i == carType.length - 1) {
+                            sqlTemp += ` OR ct.idCarType = '${carType[i]}' ) `;
                         } else {
-                            sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' ) `;
+                            sqlTemp += ` OR ct.idCarType = '${carType[i]}' `;
                         }
-                    } else if (i == carType.length - 1) {
-                        sqlTemp += ` OR ct.idCarType = '${carType[i]}' ) `;
-                    } else {
-                        sqlTemp += ` OR ct.idCarType = '${carType[i]}' `;
                     }
                 }
                 conditionSql += sqlTemp;
@@ -512,7 +516,8 @@ const confirmMoving = async (req, res) => {
                         res.status(200).send(data);
                     } else {
                         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-                        data.message = Strings.Common.CURRENTLY_UNABLE_TO_UPDATE;
+                        data.message =
+                            Strings.Common.CURRENTLY_UNABLE_TO_UPDATE;
                         res.status(200).send(data);
                     }
                 }

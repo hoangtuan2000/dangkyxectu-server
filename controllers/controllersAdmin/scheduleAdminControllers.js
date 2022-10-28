@@ -90,16 +90,18 @@ const getAdminScheduleList = async (req, res) => {
             if (status && status.length > 0) {
                 let sqlTemp = "";
                 for (let i = 0; i < status.length; i++) {
-                    if (i == 0) {
-                        if (status.length > 1) {
-                            sqlTemp += ` AND ( sc.idScheduleStatus = '${status[i]}' `;
+                    if (!helper.isNullOrEmpty(status[i])) {
+                        if (i == 0) {
+                            if (status.length > 1) {
+                                sqlTemp += ` AND ( sc.idScheduleStatus = '${status[i]}' `;
+                            } else {
+                                sqlTemp += ` AND ( sc.idScheduleStatus = '${status[i]}' ) `;
+                            }
+                        } else if (i == status.length - 1) {
+                            sqlTemp += ` OR sc.idScheduleStatus = '${status[i]}' ) `;
                         } else {
-                            sqlTemp += ` AND ( sc.idScheduleStatus = '${status[i]}' ) `;
+                            sqlTemp += ` OR sc.idScheduleStatus = '${status[i]}' `;
                         }
-                    } else if (i == status.length - 1) {
-                        sqlTemp += ` OR sc.idScheduleStatus = '${status[i]}' ) `;
-                    } else {
-                        sqlTemp += ` OR sc.idScheduleStatus = '${status[i]}' `;
                     }
                 }
                 conditionSql += sqlTemp;
@@ -107,16 +109,18 @@ const getAdminScheduleList = async (req, res) => {
             if (carType && carType.length > 0) {
                 let sqlTemp = "";
                 for (let i = 0; i < carType.length; i++) {
-                    if (i == 0) {
-                        if (carType.length > 1) {
-                            sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' `;
+                    if (!helper.isNullOrEmpty(carType[i])) {
+                        if (i == 0) {
+                            if (carType.length > 1) {
+                                sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' `;
+                            } else {
+                                sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' ) `;
+                            }
+                        } else if (i == carType.length - 1) {
+                            sqlTemp += ` OR ct.idCarType = '${carType[i]}' ) `;
                         } else {
-                            sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' ) `;
+                            sqlTemp += ` OR ct.idCarType = '${carType[i]}' `;
                         }
-                    } else if (i == carType.length - 1) {
-                        sqlTemp += ` OR ct.idCarType = '${carType[i]}' ) `;
-                    } else {
-                        sqlTemp += ` OR ct.idCarType = '${carType[i]}' `;
                     }
                 }
                 conditionSql += sqlTemp;
@@ -124,16 +128,18 @@ const getAdminScheduleList = async (req, res) => {
             if (faculty && faculty.length > 0) {
                 let sqlTemp = "";
                 for (let i = 0; i < faculty.length; i++) {
-                    if (i == 0) {
-                        if (faculty.length > 1) {
-                            sqlTemp += ` AND ( fa.idFaculty = '${faculty[i]}' `;
+                    if (!helper.isNullOrEmpty(faculty[i])) {
+                        if (i == 0) {
+                            if (faculty.length > 1) {
+                                sqlTemp += ` AND ( fa.idFaculty = '${faculty[i]}' `;
+                            } else {
+                                sqlTemp += ` AND ( fa.idFaculty = '${faculty[i]}' ) `;
+                            }
+                        } else if (i == faculty.length - 1) {
+                            sqlTemp += ` OR fa.idFaculty = '${faculty[i]}' ) `;
                         } else {
-                            sqlTemp += ` AND ( fa.idFaculty = '${faculty[i]}' ) `;
+                            sqlTemp += ` OR fa.idFaculty = '${faculty[i]}' `;
                         }
-                    } else if (i == faculty.length - 1) {
-                        sqlTemp += ` OR fa.idFaculty = '${faculty[i]}' ) `;
-                    } else {
-                        sqlTemp += ` OR fa.idFaculty = '${faculty[i]}' `;
                     }
                 }
                 conditionSql += sqlTemp;
@@ -995,6 +1001,7 @@ const getCarStatusListOfTrips = async (req, res, next) => {
         isBrokenCarPartsAfterTrip,
         startDate,
         endDate,
+        getAllData,
     } = req.body;
 
     page = parseInt(page) || Constants.Common.PAGE;
@@ -1033,16 +1040,18 @@ const getCarStatusListOfTrips = async (req, res, next) => {
             if (driver && driver.length > 0) {
                 let sqlTemp = "";
                 for (let i = 0; i < driver.length; i++) {
-                    if (i == 0) {
-                        if (driver.length > 1) {
-                            sqlTemp += ` AND ( dr.idUser = '${driver[i]}' `;
+                    if (!helper.isNullOrEmpty(driver[i])) {
+                        if (i == 0) {
+                            if (driver.length > 1) {
+                                sqlTemp += ` AND ( dr.idUser = '${driver[i]}' `;
+                            } else {
+                                sqlTemp += ` AND ( dr.idUser = '${driver[i]}' ) `;
+                            }
+                        } else if (i == driver.length - 1) {
+                            sqlTemp += ` OR dr.idUser = '${driver[i]}' ) `;
                         } else {
-                            sqlTemp += ` AND ( dr.idUser = '${driver[i]}' ) `;
+                            sqlTemp += ` OR dr.idUser = '${driver[i]}' `;
                         }
-                    } else if (i == driver.length - 1) {
-                        sqlTemp += ` OR dr.idUser = '${driver[i]}' ) `;
-                    } else {
-                        sqlTemp += ` OR dr.idUser = '${driver[i]}' `;
                     }
                 }
                 conditionSql += sqlTemp;
@@ -1051,16 +1060,18 @@ const getCarStatusListOfTrips = async (req, res, next) => {
             if (carBrand && carBrand.length > 0) {
                 let sqlTemp = "";
                 for (let i = 0; i < carBrand.length; i++) {
-                    if (i == 0) {
-                        if (carBrand.length > 1) {
-                            sqlTemp += ` AND ( cb.idCarBrand = '${carBrand[i]}' `;
+                    if (!helper.isNullOrEmpty(carBrand[i])) {
+                        if (i == 0) {
+                            if (carBrand.length > 1) {
+                                sqlTemp += ` AND ( cb.idCarBrand = '${carBrand[i]}' `;
+                            } else {
+                                sqlTemp += ` AND ( cb.idCarBrand = '${carBrand[i]}' ) `;
+                            }
+                        } else if (i == carBrand.length - 1) {
+                            sqlTemp += ` OR cb.idCarBrand = '${carBrand[i]}' ) `;
                         } else {
-                            sqlTemp += ` AND ( cb.idCarBrand = '${carBrand[i]}' ) `;
+                            sqlTemp += ` OR cb.idCarBrand = '${carBrand[i]}' `;
                         }
-                    } else if (i == carBrand.length - 1) {
-                        sqlTemp += ` OR cb.idCarBrand = '${carBrand[i]}' ) `;
-                    } else {
-                        sqlTemp += ` OR cb.idCarBrand = '${carBrand[i]}' `;
                     }
                 }
                 conditionSql += sqlTemp;
@@ -1069,16 +1080,18 @@ const getCarStatusListOfTrips = async (req, res, next) => {
             if (carType && carType.length > 0) {
                 let sqlTemp = "";
                 for (let i = 0; i < carType.length; i++) {
-                    if (i == 0) {
-                        if (carType.length > 1) {
-                            sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' `;
+                    if (!helper.isNullOrEmpty(carType[i])) {
+                        if (i == 0) {
+                            if (carType.length > 1) {
+                                sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' `;
+                            } else {
+                                sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' ) `;
+                            }
+                        } else if (i == carType.length - 1) {
+                            sqlTemp += ` OR ct.idCarType = '${carType[i]}' ) `;
                         } else {
-                            sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' ) `;
+                            sqlTemp += ` OR ct.idCarType = '${carType[i]}' `;
                         }
-                    } else if (i == carType.length - 1) {
-                        sqlTemp += ` OR ct.idCarType = '${carType[i]}' ) `;
-                    } else {
-                        sqlTemp += ` OR ct.idCarType = '${carType[i]}' `;
                     }
                 }
                 conditionSql += sqlTemp;
@@ -1090,9 +1103,9 @@ const getCarStatusListOfTrips = async (req, res, next) => {
                         isBrokenCarPartsBeforeTrip
                     )
                 ) {
-                    conditionSql += ` AND (bcp.totalBrokenPartsBeforeTrip IS NULL ) `;
-                } else {
                     conditionSql += ` AND (bcp.totalBrokenPartsBeforeTrip IS NOT NULL) `;
+                } else {
+                    conditionSql += ` AND (bcp.totalBrokenPartsBeforeTrip IS NULL ) `;
                 }
             }
 
@@ -1102,9 +1115,9 @@ const getCarStatusListOfTrips = async (req, res, next) => {
                         isBrokenCarPartsAfterTrip
                     )
                 ) {
-                    conditionSql += ` AND (bcp.totalBrokenPartsAfterTrip IS NULL) `;
-                } else {
                     conditionSql += ` AND (bcp.totalBrokenPartsAfterTrip IS NOT NULL) `;
+                } else {
+                    conditionSql += ` AND (bcp.totalBrokenPartsAfterTrip IS NULL) `;
                 }
             }
 
@@ -1138,7 +1151,7 @@ const getCarStatusListOfTrips = async (req, res, next) => {
                 data.message = Strings.Common.ERROR_GET_DATA;
                 res.status(200).send(data);
             } else {
-                const sql = `SELECT
+                const sqlTemp = `SELECT
                                 IFNULL(bcp.totalBrokenPartsBeforeTrip, 0) as totalBrokenPartsBeforeTrip,
                                 IFNULL(bcp.totalBrokenPartsAfterTrip, 0) as totalBrokenPartsAfterTrip,
                                 sc.idSchedule, sc.startDate, sc.endDate,
@@ -1162,15 +1175,26 @@ const getCarStatusListOfTrips = async (req, res, next) => {
                                 FROM broken_car_parts
                                 GROUP BY idSchedule) as bcp
                                 ON bcp.idSchedule = sc.idSchedule
-                            WHERE sc.idScheduleStatus NOT IN (${
-                                Constants.ScheduleStatusCode.PENDING
-                            }, ${
-                    Constants.ScheduleStatusCode.APPROVED
-                }) ${conditionSql}
+                            WHERE sc.idScheduleStatus NOT IN (${Constants.ScheduleStatusCode.PENDING}, ${Constants.ScheduleStatusCode.APPROVED}) ${conditionSql}
                             ORDER BY FROM_UNIXTIME(sc.startDate) DESC
-                            LIMIT ${
-                                limitEntry * page - limitEntry
-                            }, ${limitEntry}`;
+                            `;
+
+                let limitData = `  LIMIT ${
+                    limitEntry * page - limitEntry
+                }, ${limitEntry}`;
+
+                let sql = "";
+                // CHECK GET ALL DATA => NOT LIMIT DATA
+                if (
+                    getAllData &&
+                    helper.convertStringBooleanToBoolean(getAllData)
+                ) {
+                    sql += sqlTemp;
+                } else {
+                    sql += sqlTemp + limitData;
+                }
+
+                console.log("sql: ", sql);
 
                 db.query(sql, (err, result) => {
                     if (err) {
@@ -1180,7 +1204,17 @@ const getCarStatusListOfTrips = async (req, res, next) => {
                     } else {
                         dataList.status = Constants.ApiCode.OK;
                         dataList.message = Strings.Common.SUCCESS;
-                        dataList.limitEntry = limitEntry;
+
+                        if (
+                            getAllData &&
+                            helper.convertStringBooleanToBoolean(getAllData)
+                        ) {
+                            dataList.limitEntry =
+                                resultExecuteQuery[0].sizeQuerySnapshot;
+                        } else {
+                            dataList.limitEntry = limitEntry;
+                        }
+
                         dataList.page = page;
                         dataList.sizeQuerySnapshot =
                             resultExecuteQuery[0].sizeQuerySnapshot;

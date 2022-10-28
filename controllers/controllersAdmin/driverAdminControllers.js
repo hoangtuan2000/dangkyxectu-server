@@ -21,6 +21,7 @@ const getDriverList = async (req, res) => {
         fullNameDriver,
         emailDriver,
         phoneDriver,
+        getAllData,
     } = req.body;
 
     page = parseInt(page) || Constants.Common.PAGE;
@@ -66,16 +67,18 @@ const getDriverList = async (req, res) => {
             if (driverLicense && driverLicense.length > 0) {
                 let sqlTemp = "";
                 for (let i = 0; i < driverLicense.length; i++) {
-                    if (i == 0) {
-                        if (driverLicense.length > 1) {
-                            sqlTemp += ` AND ( dl.idDriverLicense = '${driverLicense[i]}' `;
+                    if (!helper.isNullOrEmpty(driverLicense[i])) {
+                        if (i == 0) {
+                            if (driverLicense.length > 1) {
+                                sqlTemp += ` AND ( dl.idDriverLicense = '${driverLicense[i]}' `;
+                            } else {
+                                sqlTemp += ` AND ( dl.idDriverLicense = '${driverLicense[i]}' ) `;
+                            }
+                        } else if (i == driverLicense.length - 1) {
+                            sqlTemp += ` OR dl.idDriverLicense = '${driverLicense[i]}' ) `;
                         } else {
-                            sqlTemp += ` AND ( dl.idDriverLicense = '${driverLicense[i]}' ) `;
+                            sqlTemp += ` OR dl.idDriverLicense = '${driverLicense[i]}' `;
                         }
-                    } else if (i == driverLicense.length - 1) {
-                        sqlTemp += ` OR dl.idDriverLicense = '${driverLicense[i]}' ) `;
-                    } else {
-                        sqlTemp += ` OR dl.idDriverLicense = '${driverLicense[i]}' `;
                     }
                 }
                 conditionSql += sqlTemp;
@@ -84,16 +87,18 @@ const getDriverList = async (req, res) => {
             if (driverStatus && driverStatus.length > 0) {
                 let sqlTemp = "";
                 for (let i = 0; i < driverStatus.length; i++) {
-                    if (i == 0) {
-                        if (driverStatus.length > 1) {
-                            sqlTemp += ` AND ( uss.idUserStatus = '${driverStatus[i]}' `;
+                    if (!helper.isNullOrEmpty(driverStatus[i])) {
+                        if (i == 0) {
+                            if (driverStatus.length > 1) {
+                                sqlTemp += ` AND ( uss.idUserStatus = '${driverStatus[i]}' `;
+                            } else {
+                                sqlTemp += ` AND ( uss.idUserStatus = '${driverStatus[i]}' ) `;
+                            }
+                        } else if (i == driverStatus.length - 1) {
+                            sqlTemp += ` OR uss.idUserStatus = '${driverStatus[i]}' ) `;
                         } else {
-                            sqlTemp += ` AND ( uss.idUserStatus = '${driverStatus[i]}' ) `;
+                            sqlTemp += ` OR uss.idUserStatus = '${driverStatus[i]}' `;
                         }
-                    } else if (i == driverStatus.length - 1) {
-                        sqlTemp += ` OR uss.idUserStatus = '${driverStatus[i]}' ) `;
-                    } else {
-                        sqlTemp += ` OR uss.idUserStatus = '${driverStatus[i]}' `;
                     }
                 }
                 conditionSql += sqlTemp;
@@ -145,7 +150,7 @@ const getDriverList = async (req, res) => {
                 data.message = Strings.Common.ERROR_GET_DATA;
                 res.status(200).send(data);
             } else {
-                const sql = `SELECT
+                const sqlTemp = `SELECT
                                 IFNULL(avgRv.averageStar, 0) as averageStar,
                                 IFNULL(trip.numberOfTrips, 0) as numberOfTrips,
                                 dr.idUser as idDriver, dr.fullName as fullNameDriver,
@@ -168,19 +173,29 @@ const getDriverList = async (req, res) => {
                                     FROM user as dr
                                     LEFT JOIN schedule as sc ON sc.idDriver = dr.idUser
                                     WHERE idRole = ${Constants.RoleCode.DRIVER} 
-                                    AND sc.idScheduleStatus = ${
-                                        Constants.ScheduleStatusCode.COMPLETE
-                                    } ) as sc
+                                    AND sc.idScheduleStatus = ${Constants.ScheduleStatusCode.COMPLETE} ) as sc
                                     ON sc.idSchedule = rv.idSchedule
                                 GROUP BY sc.idDriver) as avgRv
                                 ON avgRv.idDriver = dr.idUser
-                            WHERE idRole = ${
-                                Constants.RoleCode.DRIVER
-                            }  ${conditionSql}
+                            WHERE idRole = ${Constants.RoleCode.DRIVER}  ${conditionSql}
                             ORDER BY dr.code
-                            LIMIT ${
-                                limitEntry * page - limitEntry
-                            }, ${limitEntry}`;
+                           `;
+
+                let limitData = `  LIMIT ${
+                    limitEntry * page - limitEntry
+                }, ${limitEntry}`;
+
+                let sql = "";
+                // CHECK GET ALL DATA => NOT LIMIT DATA
+                if (
+                    getAllData &&
+                    helper.convertStringBooleanToBoolean(getAllData)
+                ) {
+                    sql += sqlTemp;
+                } else {
+                    sql += sqlTemp + limitData;
+                }
+
                 db.query(sql, (err, result) => {
                     if (err) {
                         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
@@ -189,7 +204,17 @@ const getDriverList = async (req, res) => {
                     } else {
                         dataList.status = Constants.ApiCode.OK;
                         dataList.message = Strings.Common.SUCCESS;
-                        dataList.limitEntry = limitEntry;
+
+                        if (
+                            getAllData &&
+                            helper.convertStringBooleanToBoolean(getAllData)
+                        ) {
+                            dataList.limitEntry =
+                                resultExecuteQuery[0].sizeQuerySnapshot;
+                        } else {
+                            dataList.limitEntry = limitEntry;
+                        }
+
                         dataList.page = page;
                         dataList.sizeQuerySnapshot =
                             resultExecuteQuery[0].sizeQuerySnapshot;

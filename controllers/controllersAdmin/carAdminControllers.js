@@ -60,16 +60,18 @@ const getCarListForAdmin = async (req, res) => {
             if (carType && carType.length > 0) {
                 let sqlTemp = "";
                 for (let i = 0; i < carType.length; i++) {
-                    if (i == 0) {
-                        if (carType.length > 1) {
-                            sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' `;
+                    if (!helper.isNullOrEmpty(carType[i])) {
+                        if (i == 0) {
+                            if (carType.length > 1) {
+                                sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' `;
+                            } else {
+                                sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' ) `;
+                            }
+                        } else if (i == carType.length - 1) {
+                            sqlTemp += ` OR ct.idCarType = '${carType[i]}' ) `;
                         } else {
-                            sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' ) `;
+                            sqlTemp += ` OR ct.idCarType = '${carType[i]}' `;
                         }
-                    } else if (i == carType.length - 1) {
-                        sqlTemp += ` OR ct.idCarType = '${carType[i]}' ) `;
-                    } else {
-                        sqlTemp += ` OR ct.idCarType = '${carType[i]}' `;
                     }
                 }
                 conditionSql += sqlTemp;
@@ -77,16 +79,18 @@ const getCarListForAdmin = async (req, res) => {
             if (carStatus && carStatus.length > 0) {
                 let sqlTemp = "";
                 for (let i = 0; i < carStatus.length; i++) {
-                    if (i == 0) {
-                        if (carStatus.length > 1) {
-                            sqlTemp += ` AND ( cs.idCarStatus = '${carStatus[i]}' `;
+                    if (!helper.isNullOrEmpty(carStatus[i])) {
+                        if (i == 0) {
+                            if (carStatus.length > 1) {
+                                sqlTemp += ` AND ( cs.idCarStatus = '${carStatus[i]}' `;
+                            } else {
+                                sqlTemp += ` AND ( cs.idCarStatus = '${carStatus[i]}' ) `;
+                            }
+                        } else if (i == carStatus.length - 1) {
+                            sqlTemp += ` OR cs.idCarStatus = '${carStatus[i]}' ) `;
                         } else {
-                            sqlTemp += ` AND ( cs.idCarStatus = '${carStatus[i]}' ) `;
+                            sqlTemp += ` OR cs.idCarStatus = '${carStatus[i]}' `;
                         }
-                    } else if (i == carStatus.length - 1) {
-                        sqlTemp += ` OR cs.idCarStatus = '${carStatus[i]}' ) `;
-                    } else {
-                        sqlTemp += ` OR cs.idCarStatus = '${carStatus[i]}' `;
                     }
                 }
                 conditionSql += sqlTemp;
@@ -94,16 +98,18 @@ const getCarListForAdmin = async (req, res) => {
             if (carBrand && carBrand.length > 0) {
                 let sqlTemp = "";
                 for (let i = 0; i < carBrand.length; i++) {
-                    if (i == 0) {
-                        if (carBrand.length > 1) {
-                            sqlTemp += ` AND ( cb.idCarBrand = '${carBrand[i]}' `;
+                    if (!helper.isNullOrEmpty(carBrand[i])) {
+                        if (i == 0) {
+                            if (carBrand.length > 1) {
+                                sqlTemp += ` AND ( cb.idCarBrand = '${carBrand[i]}' `;
+                            } else {
+                                sqlTemp += ` AND ( cb.idCarBrand = '${carBrand[i]}' ) `;
+                            }
+                        } else if (i == carBrand.length - 1) {
+                            sqlTemp += ` OR cb.idCarBrand = '${carBrand[i]}' ) `;
                         } else {
-                            sqlTemp += ` AND ( cb.idCarBrand = '${carBrand[i]}' ) `;
+                            sqlTemp += ` OR cb.idCarBrand = '${carBrand[i]}' `;
                         }
-                    } else if (i == carBrand.length - 1) {
-                        sqlTemp += ` OR cb.idCarBrand = '${carBrand[i]}' ) `;
-                    } else {
-                        sqlTemp += ` OR cb.idCarBrand = '${carBrand[i]}' `;
                     }
                 }
                 conditionSql += sqlTemp;

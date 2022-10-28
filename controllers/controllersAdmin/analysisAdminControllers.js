@@ -129,6 +129,7 @@ const getDataTotalNumberOfTripsOverTime = async (req, res) => {
         idWard,
         startDateSchedule,
         endDateSchedule,
+        getAllData,
     } = req.body;
     page = parseInt(page) || Constants.Common.PAGE;
     limitEntry = parseInt(limitEntry) || Constants.Common.LIMIT_ENTRY;
@@ -221,16 +222,18 @@ const getDataTotalNumberOfTripsOverTime = async (req, res) => {
             if (status && status.length > 0) {
                 let sqlTemp = "";
                 for (let i = 0; i < status.length; i++) {
-                    if (i == 0) {
-                        if (status.length > 1) {
-                            sqlTemp += ` AND ( sc.idScheduleStatus = '${status[i]}' `;
+                    if (!helper.isNullOrEmpty(status[i])) {
+                        if (i == 0) {
+                            if (status.length > 1) {
+                                sqlTemp += ` AND ( sc.idScheduleStatus = '${status[i]}' `;
+                            } else {
+                                sqlTemp += ` AND ( sc.idScheduleStatus = '${status[i]}' ) `;
+                            }
+                        } else if (i == status.length - 1) {
+                            sqlTemp += ` OR sc.idScheduleStatus = '${status[i]}' ) `;
                         } else {
-                            sqlTemp += ` AND ( sc.idScheduleStatus = '${status[i]}' ) `;
+                            sqlTemp += ` OR sc.idScheduleStatus = '${status[i]}' `;
                         }
-                    } else if (i == status.length - 1) {
-                        sqlTemp += ` OR sc.idScheduleStatus = '${status[i]}' ) `;
-                    } else {
-                        sqlTemp += ` OR sc.idScheduleStatus = '${status[i]}' `;
                     }
                 }
                 conditionSql += sqlTemp;
@@ -238,16 +241,18 @@ const getDataTotalNumberOfTripsOverTime = async (req, res) => {
             if (carType && carType.length > 0) {
                 let sqlTemp = "";
                 for (let i = 0; i < carType.length; i++) {
-                    if (i == 0) {
-                        if (carType.length > 1) {
-                            sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' `;
+                    if (!helper.isNullOrEmpty(carType[i])) {
+                        if (i == 0) {
+                            if (carType.length > 1) {
+                                sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' `;
+                            } else {
+                                sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' ) `;
+                            }
+                        } else if (i == carType.length - 1) {
+                            sqlTemp += ` OR ct.idCarType = '${carType[i]}' ) `;
                         } else {
-                            sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' ) `;
+                            sqlTemp += ` OR ct.idCarType = '${carType[i]}' `;
                         }
-                    } else if (i == carType.length - 1) {
-                        sqlTemp += ` OR ct.idCarType = '${carType[i]}' ) `;
-                    } else {
-                        sqlTemp += ` OR ct.idCarType = '${carType[i]}' `;
                     }
                 }
                 conditionSql += sqlTemp;
@@ -255,16 +260,18 @@ const getDataTotalNumberOfTripsOverTime = async (req, res) => {
             if (faculty && faculty.length > 0) {
                 let sqlTemp = "";
                 for (let i = 0; i < faculty.length; i++) {
-                    if (i == 0) {
-                        if (faculty.length > 1) {
-                            sqlTemp += ` AND ( fa.idFaculty = '${faculty[i]}' `;
+                    if (!helper.isNullOrEmpty(faculty[i])) {
+                        if (i == 0) {
+                            if (faculty.length > 1) {
+                                sqlTemp += ` AND ( fa.idFaculty = '${faculty[i]}' `;
+                            } else {
+                                sqlTemp += ` AND ( fa.idFaculty = '${faculty[i]}' ) `;
+                            }
+                        } else if (i == faculty.length - 1) {
+                            sqlTemp += ` OR fa.idFaculty = '${faculty[i]}' ) `;
                         } else {
-                            sqlTemp += ` AND ( fa.idFaculty = '${faculty[i]}' ) `;
+                            sqlTemp += ` OR fa.idFaculty = '${faculty[i]}' `;
                         }
-                    } else if (i == faculty.length - 1) {
-                        sqlTemp += ` OR fa.idFaculty = '${faculty[i]}' ) `;
-                    } else {
-                        sqlTemp += ` OR fa.idFaculty = '${faculty[i]}' `;
                     }
                 }
                 conditionSql += sqlTemp;
@@ -317,10 +324,21 @@ const getDataTotalNumberOfTripsOverTime = async (req, res) => {
                 data.message = Strings.Common.ERROR_GET_DATA;
                 res.status(200).send(data);
             } else {
-                sql =
-                    sql +
-                    conditionSql +
-                    ` LIMIT ${limitEntry * page - limitEntry}, ${limitEntry}`;
+                // CHECK GET ALL DATA => NOT LIMIT DATA
+                if (
+                    getAllData &&
+                    helper.convertStringBooleanToBoolean(getAllData)
+                ) {
+                    sql = sql + conditionSql;
+                } else {
+                    sql =
+                        sql +
+                        conditionSql +
+                        ` LIMIT ${
+                            limitEntry * page - limitEntry
+                        }, ${limitEntry}`;
+                }
+
                 db.query(sql, (err, result) => {
                     if (err) {
                         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
@@ -329,7 +347,17 @@ const getDataTotalNumberOfTripsOverTime = async (req, res) => {
                     } else {
                         dataList.status = Constants.ApiCode.OK;
                         dataList.message = Strings.Common.SUCCESS;
-                        dataList.limitEntry = limitEntry;
+
+                        if (
+                            getAllData &&
+                            helper.convertStringBooleanToBoolean(getAllData)
+                        ) {
+                            dataList.limitEntry =
+                                resultExecuteQuery[0].sizeQuerySnapshot;
+                        } else {
+                            dataList.limitEntry = limitEntry;
+                        }
+
                         dataList.page = page;
                         dataList.sizeQuerySnapshot =
                             resultExecuteQuery[0].sizeQuerySnapshot;
@@ -386,6 +414,7 @@ const getDataAnalysisDriverLicense = async (req, res) => {
         phoneDriver,
         address,
         idWard,
+        getAllData,
     } = req.body;
     page = parseInt(page) || Constants.Common.PAGE;
     limitEntry = parseInt(limitEntry) || Constants.Common.LIMIT_ENTRY;
@@ -412,16 +441,18 @@ const getDataAnalysisDriverLicense = async (req, res) => {
             if (driverLicense && driverLicense.length > 0) {
                 let sqlTemp = "";
                 for (let i = 0; i < driverLicense.length; i++) {
-                    if (i == 0) {
-                        if (driverLicense.length > 1) {
-                            sqlTemp += ` AND ( dl.idDriverLicense = '${driverLicense[i]}' `;
+                    if (!helper.isNullOrEmpty(driverLicense[i])) {
+                        if (i == 0) {
+                            if (driverLicense.length > 1) {
+                                sqlTemp += ` AND ( dl.idDriverLicense = '${driverLicense[i]}' `;
+                            } else {
+                                sqlTemp += ` AND ( dl.idDriverLicense = '${driverLicense[i]}' ) `;
+                            }
+                        } else if (i == driverLicense.length - 1) {
+                            sqlTemp += ` OR dl.idDriverLicense = '${driverLicense[i]}' ) `;
                         } else {
-                            sqlTemp += ` AND ( dl.idDriverLicense = '${driverLicense[i]}' ) `;
+                            sqlTemp += ` OR dl.idDriverLicense = '${driverLicense[i]}' `;
                         }
-                    } else if (i == driverLicense.length - 1) {
-                        sqlTemp += ` OR dl.idDriverLicense = '${driverLicense[i]}' ) `;
-                    } else {
-                        sqlTemp += ` OR dl.idDriverLicense = '${driverLicense[i]}' `;
                     }
                 }
                 conditionSql += sqlTemp;
@@ -430,16 +461,18 @@ const getDataAnalysisDriverLicense = async (req, res) => {
             if (userStatus && userStatus.length > 0) {
                 let sqlTemp = "";
                 for (let i = 0; i < userStatus.length; i++) {
-                    if (i == 0) {
-                        if (userStatus.length > 1) {
-                            sqlTemp += ` AND ( uss.idUserStatus = '${userStatus[i]}' `;
+                    if (!helper.isNullOrEmpty(userStatus[i])) {
+                        if (i == 0) {
+                            if (userStatus.length > 1) {
+                                sqlTemp += ` AND ( uss.idUserStatus = '${userStatus[i]}' `;
+                            } else {
+                                sqlTemp += ` AND ( uss.idUserStatus = '${userStatus[i]}' ) `;
+                            }
+                        } else if (i == userStatus.length - 1) {
+                            sqlTemp += ` OR uss.idUserStatus = '${userStatus[i]}' ) `;
                         } else {
-                            sqlTemp += ` AND ( uss.idUserStatus = '${userStatus[i]}' ) `;
+                            sqlTemp += ` OR uss.idUserStatus = '${userStatus[i]}' `;
                         }
-                    } else if (i == userStatus.length - 1) {
-                        sqlTemp += ` OR uss.idUserStatus = '${userStatus[i]}' ) `;
-                    } else {
-                        sqlTemp += ` OR uss.idUserStatus = '${userStatus[i]}' `;
                     }
                 }
                 conditionSql += sqlTemp;
@@ -486,7 +519,7 @@ const getDataAnalysisDriverLicense = async (req, res) => {
                 data.message = Strings.Common.ERROR_GET_DATA;
                 res.status(200).send(data);
             } else {
-                sql = `SELECT 
+                let sqlTemp = `SELECT 
                         dl.idDriverLicense, dl.name as nameDriverLicense,
                         dr.idUser as idDriver, dr.fullName as fullNameDriver, dr.code as codeDriver,
                         dr.email as emailDriver, dr.phone as phoneDriver,
@@ -495,7 +528,21 @@ const getDataAnalysisDriverLicense = async (req, res) => {
                     LEFT JOIN user as dr ON dr.idDriverLicense = dl.idDriverLicense
                     LEFT JOIN user_status as uss ON uss.idUserStatus = dr.idUserStatus
                     WHERE 1 = 1 ${conditionSql}
-                    LIMIT ${limitEntry * page - limitEntry}, ${limitEntry}`;
+                    `;
+                let limitData = `  LIMIT ${
+                    limitEntry * page - limitEntry
+                }, ${limitEntry}`;
+
+                let sql = "";
+                // CHECK GET ALL DATA => NOT LIMIT DATA
+                if (
+                    getAllData &&
+                    helper.convertStringBooleanToBoolean(getAllData)
+                ) {
+                    sql += sqlTemp;
+                } else {
+                    sql += sqlTemp + limitData;
+                }
                 db.query(sql, (err, result) => {
                     if (err) {
                         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
@@ -504,7 +551,17 @@ const getDataAnalysisDriverLicense = async (req, res) => {
                     } else {
                         dataList.status = Constants.ApiCode.OK;
                         dataList.message = Strings.Common.SUCCESS;
-                        dataList.limitEntry = limitEntry;
+
+                        if (
+                            getAllData &&
+                            helper.convertStringBooleanToBoolean(getAllData)
+                        ) {
+                            dataList.limitEntry =
+                                resultExecuteQuery[0].sizeQuerySnapshot;
+                        } else {
+                            dataList.limitEntry = limitEntry;
+                        }
+
                         dataList.page = page;
                         dataList.sizeQuerySnapshot =
                             resultExecuteQuery[0].sizeQuerySnapshot;
