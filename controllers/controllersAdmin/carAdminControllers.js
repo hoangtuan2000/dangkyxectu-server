@@ -16,6 +16,7 @@ const getCarListForAdmin = async (req, res) => {
         licenseExpires,
         haveTrip,
         haveMaintenance,
+        getAllData,
     } = req.body;
     page = parseInt(page) || Constants.Common.PAGE;
     limitEntry = parseInt(limitEntry) || Constants.Common.LIMIT_ENTRY;
@@ -145,7 +146,7 @@ const getCarListForAdmin = async (req, res) => {
                 data.message = Strings.Common.ERROR_GET_DATA;
                 res.status(200).send(data);
             } else {
-                const sql = `SELECT 
+                let sqlTemp = `SELECT 
                                 ca.idCar, ca.licensePlates, ca.image,
                                 IFNULL(trip.numberOfTrips, 0) as numberOfTrips,
                                 IFNULL(licenseExpired.licenseNumberExpired , 0) as licenseNumberExpired,
@@ -174,9 +175,22 @@ const getCarListForAdmin = async (req, res) => {
                                     AND noExpireDate = 0
                                     GROUP BY cld.idCar) as licenseExpired ON licenseExpired.idCar = ca.idCar
                             WHERE 1 = 1 ${conditionSql}   
-                            LIMIT ${
-                                limitEntry * page - limitEntry
-                            }, ${limitEntry}`;
+                           `;
+
+                let limitData = `  LIMIT ${
+                    limitEntry * page - limitEntry
+                }, ${limitEntry}`;
+
+                let sql = "";
+                // CHECK GET ALL DATA => NOT LIMIT DATA
+                if (
+                    getAllData &&
+                    helper.convertStringBooleanToBoolean(getAllData)
+                ) {
+                    sql += sqlTemp;
+                } else {
+                    sql += sqlTemp + limitData;
+                }
                 db.query(sql, (err, result) => {
                     if (err) {
                         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
@@ -185,7 +199,17 @@ const getCarListForAdmin = async (req, res) => {
                     } else {
                         dataList.status = Constants.ApiCode.OK;
                         dataList.message = Strings.Common.SUCCESS;
-                        dataList.limitEntry = limitEntry;
+
+                        if (
+                            getAllData &&
+                            helper.convertStringBooleanToBoolean(getAllData)
+                        ) {
+                            dataList.limitEntry =
+                                resultExecuteQuery[0].sizeQuerySnapshot;
+                        } else {
+                            dataList.limitEntry = limitEntry;
+                        }
+
                         dataList.page = page;
                         dataList.sizeQuerySnapshot =
                             resultExecuteQuery[0].sizeQuerySnapshot;
