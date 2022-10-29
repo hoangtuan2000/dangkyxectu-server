@@ -4,6 +4,7 @@ const { Constants } = require("../../constants/Constants");
 const { Strings } = require("../../constants/Strings");
 const db = require("../../models/index");
 
+// ANALYSIS TOTAL COMMON
 const getAnalysisTotalCommon = async (req, res) => {
     let data = { ...Constants.ResultData };
 
@@ -58,6 +59,7 @@ const getAnalysisTotalCommon = async (req, res) => {
     }
 };
 
+// ANALYSIS TOTAL NUMBER OF TRIPS OVER TIME
 const getTotalNumberOfTripsOverTime = async (req, res) => {
     let { startDate, endDate } = req.body;
     let data = { ...Constants.ResultData };
@@ -374,6 +376,7 @@ const getDataTotalNumberOfTripsOverTime = async (req, res) => {
     }
 };
 
+// ANALYSIS DRIVER LICENSE
 const getAnalysisDriverLicense = async (req, res) => {
     let data = { ...Constants.ResultData };
 
@@ -578,10 +581,52 @@ const getDataAnalysisDriverLicense = async (req, res) => {
     }
 };
 
+// ANALYSIS TOTAL TRIPS OF FACULTIES
+const getAnalysisTotalTripsOfFaculties = async (req, res) => {
+    let { startDate, endDate } = req.body;
+    let data = { ...Constants.ResultData };
+
+    if (req.userToken) {
+        let sql = `SELECT COUNT(sc.idSchedule) as totalTripsOfFaculty, fc.name as nameFaculty
+                FROM faculty as fc
+                LEFT JOIN 
+                    (SELECT schedule.idSchedule, schedule.idUser, faculty.idFaculty
+                    FROM schedule
+                    LEFT JOIN user ON user.idUser = schedule.idUser
+                    LEFT JOIN faculty ON faculty.idFaculty = user.idFaculty
+                    WHERE 1) as sc ON sc.idFaculty = fc.idFaculty
+                GROUP BY fc.idFaculty`;
+
+        db.query(sql, (err, result) => {
+            if (err) {
+                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                data.message = Strings.Common.ERROR_SERVER;
+                res.status(200).send(data);
+            } else {
+                if (result.length > 0) {
+                    data.status = Constants.ApiCode.OK;
+                    data.message = Strings.Common.SUCCESS;
+                    data.data = [...result];
+                    res.status(200).send(data);
+                } else {
+                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                    data.message = Strings.Common.ERROR_GET_DATA;
+                    res.status(200).send(data);
+                }
+            }
+        });
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
+
 module.exports = {
     getAnalysisTotalCommon,
     getTotalNumberOfTripsOverTime,
     getDataTotalNumberOfTripsOverTime,
     getAnalysisDriverLicense,
     getDataAnalysisDriverLicense,
+    getAnalysisTotalTripsOfFaculties
 };
