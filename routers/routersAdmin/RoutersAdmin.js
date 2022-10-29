@@ -150,6 +150,12 @@ router.post(
 );
 
 router.post(
+    "/createMultipleDriver",
+    authenticationControllers.authenticationAdmin,
+    driverAdminControllers.createMultipleDriver
+);
+
+router.post(
     "/updateDriver",
     authenticationControllers.authenticationAdmin,
     userControllers.validateDataUpdateUser,

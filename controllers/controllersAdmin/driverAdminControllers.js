@@ -492,6 +492,225 @@ const addDriverLdap = async (fullName, code, password) => {
     return result;
 };
 
+//CREATE MULTIPLE DRIVER FROM FILE EXCEL
+const validateDataCreateDriverFunction = async (
+    fullName,
+    code,
+    email,
+    pass,
+    phone,
+    address,
+    idWard,
+    idDriverLicense,
+    driverLicenseExpirationDate
+) => {
+    let errorData = false;
+    if (
+        helper.isNullOrEmpty(fullName) ||
+        helper.isNullOrEmpty(code) ||
+        helper.isNullOrEmpty(email) ||
+        helper.isNullOrEmpty(pass) ||
+        helper.isNullOrEmpty(phone) ||
+        helper.isNullOrEmpty(address) ||
+        helper.isNullOrEmpty(idWard) ||
+        helper.isNullOrEmpty(idDriverLicense) ||
+        helper.isNullOrEmpty(driverLicenseExpirationDate)
+    ) {
+        return false;
+    } else {
+        // CHECK FULL NAME
+        if (
+            !helper.isValidStringBetweenMinMaxLength(
+                fullName,
+                Constants.Common.MIN_LENGTH_FULL_NAME,
+                Constants.Common.MAX_LENGTH_FULL_NAME
+            )
+        ) {
+            errorData = true;
+        }
+
+        // CHECK CODE
+        if (
+            !helper.isValidStringBetweenMinMaxLength(
+                code,
+                Constants.Common.MIN_LENGTH_CODE,
+                Constants.Common.MAX_LENGTH_CODE
+            )
+        ) {
+            errorData = true;
+        }
+
+        // CHECK EMAIL
+        if (!helper.isValidEmail(email)) {
+            errorData = true;
+        }
+
+        // CHECK PASSWORD
+        if (
+            !helper.isValidStringBetweenMinMaxLength(
+                pass,
+                Constants.Common.MIN_LENGTH_PASSWORD,
+                Constants.Common.MAX_LENGTH_PASSWORD
+            )
+        ) {
+            errorData = true;
+        }
+
+        // CHECK PHONE
+        if (!helper.isValidPhoneNumber(phone)) {
+            errorData = true;
+        }
+
+        // CHECK DRIVER LICENSE EXPIRATION DATE
+        if (!helper.isTimeStamp(driverLicenseExpirationDate)) {
+            errorData = true;
+        }
+
+        // CHECK ERROR
+        if (errorData) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+};
+
+const createMultipleDriver = async (req, res) => {
+    let { fileData } = req.body;
+    let data = { ...Constants.ResultData };
+
+    if (req.userToken) {
+        if (helper.isArray(fileData) && fileData.length > 1) {
+            let currentDate = helper.formatTimeStamp(new Date().getTime());
+            const idUser = req.userToken.idUser;
+            const sql = `INSERT INTO user(fullName, code, email, phone, address, driverLicenseExpirationDate,
+                createdAt,  idDriverLicense, idRole, idWard, idUserStatus, idUserUpdate) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`;
+
+            let errorCreate = false;
+            let indexCreateError = null;
+
+            for (let i = 0; i < fileData.length; i++) {
+                // CALL FUNCTION CHECK DATA
+                let resultCheckData = await validateDataCreateDriverFunction(
+                    fileData[i].fullName,
+                    fileData[i].code,
+                    fileData[i].email,
+                    fileData[i].pass,
+                    fileData[i].phone,
+                    fileData[i].address,
+                    fileData[i].idWard,
+                    fileData[i].idDriverLicense,
+                    fileData[i].driverLicenseExpirationDate,
+                );
+                if (resultCheckData) {
+                    // FORMAT DATA
+                    let arr = await [
+                        helper.removeVietnameseAccents(fileData[i].fullName),
+                        fileData[i].code,
+                        fileData[i].email,
+                        fileData[i].phone,
+                        fileData[i].address,
+                        helper.formatTimeStamp(
+                            fileData[i].driverLicenseExpirationDate
+                        ),
+                        currentDate,
+                        fileData[i].idDriverLicense,
+                        Constants.RoleCode.DRIVER,
+                        fileData[i].idWard,
+                        Constants.UserStatusCode.WORKING,
+                        idUser,
+                    ];
+                    // INSERT DATABASE AND LDAP
+                    const resultInsert = await new Promise(
+                        (resolve, reject) => {
+                            db.beginTransaction(function (err) {
+                                if (err) {
+                                    return resolve(false);
+                                }
+                                db.query(
+                                    sql,
+                                    arr,
+                                    function (error, results, fields) {
+                                        if (error) {
+                                            db.rollback(function () {});
+                                            return resolve(false);
+                                        } else {
+                                            if (results.affectedRows > 0) {
+                                                db.commit(async function (err) {
+                                                    if (err) {
+                                                        db.rollback(
+                                                            function () {}
+                                                        );
+                                                        return resolve(false);
+                                                    } else {
+                                                        const resultAddUserLdap =
+                                                            await addDriverLdap(
+                                                                helper.removeVietnameseAccents(
+                                                                    fileData[i]
+                                                                        .fullName
+                                                                ),
+                                                                fileData[i]
+                                                                    .code,
+                                                                fileData[i].pass
+                                                            );
+                                                        if (resultAddUserLdap) {
+                                                            return resolve(
+                                                                true
+                                                            );
+                                                        } else {
+                                                            db.rollback(
+                                                                function () {}
+                                                            );
+                                                            return resolve(
+                                                                false
+                                                            );
+                                                        }
+                                                    }
+                                                });
+                                            } else {
+                                                return resolve(false);
+                                            }
+                                        }
+                                    }
+                                );
+                            });
+                        }
+                    );
+                    // CHECK ERROR INSERT
+                    if (!resultInsert) {
+                        errorCreate = true;
+                        indexCreateError = i + 1;
+                        break;
+                    }
+                } else {
+                    errorCreate = true;
+                    indexCreateError = i + 1;
+                    break;
+                }
+            }
+
+            // CHECK ERROR CREATE SEND CLIENT
+            if (errorCreate) {
+                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                data.message = `Lỗi Tại Dòng Số: ${indexCreateError}`;
+                res.status(200).send(data);
+            } else {
+                data.status = Constants.ApiCode.OK;
+                data.message = Strings.Common.SUCCESS;
+                res.status(200).send(data);
+            }
+        } else {
+            data.status = Constants.ApiCode.BAD_REQUEST;
+            data.message = Strings.Common.INVALID_DATA;
+            res.status(200).send(data);
+        }
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
+
 //UDPATE DRIVER
 const updateDriver = async (req, res) => {
     let {
@@ -786,4 +1005,5 @@ module.exports = {
     getDriverToUpdate,
     createDriver,
     updateDriver,
+    createMultipleDriver,
 };
