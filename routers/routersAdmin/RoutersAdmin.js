@@ -201,4 +201,10 @@ router.post(
     analysisAdminControllers.getAnalysisTotalTripsOfFaculties
 );
 
+router.post(
+    "/getDataAnalysisTotalTripsOfFaculties",
+    authenticationControllers.authenticationAdmin,
+    analysisAdminControllers.getDataAnalysisTotalTripsOfFaculties
+);
+
 module.exports = router;

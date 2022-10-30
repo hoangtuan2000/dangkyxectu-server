@@ -587,15 +587,33 @@ const getAnalysisTotalTripsOfFaculties = async (req, res) => {
     let data = { ...Constants.ResultData };
 
     if (req.userToken) {
-        let sql = `SELECT COUNT(sc.idSchedule) as totalTripsOfFaculty, fc.name as nameFaculty
-                FROM faculty as fc
+        let sql = `SELECT COUNT(sc.idSchedule) as totalTripsOfFaculty, fa.name as nameFaculty
+                FROM faculty as fa
                 LEFT JOIN 
                     (SELECT schedule.idSchedule, schedule.idUser, faculty.idFaculty
                     FROM schedule
                     LEFT JOIN user ON user.idUser = schedule.idUser
                     LEFT JOIN faculty ON faculty.idFaculty = user.idFaculty
-                    WHERE 1) as sc ON sc.idFaculty = fc.idFaculty
-                GROUP BY fc.idFaculty`;
+                    WHERE schedule.idScheduleStatus = ${Constants.ScheduleStatusCode.COMPLETE}) as sc 
+                    ON sc.idFaculty = fa.idFaculty
+                GROUP BY fa.idFaculty`;
+
+        if ((startDate, endDate)) {
+            startDate = helper.formatTimeStamp(startDate);
+            endDate = helper.formatTimeStamp(endDate);
+            sql = `SELECT COUNT(sc.idSchedule) as totalTripsOfFaculty, fa.name as nameFaculty
+                FROM faculty as fa
+                LEFT JOIN 
+                    (SELECT schedule.idSchedule, schedule.idUser, faculty.idFaculty
+                    FROM schedule
+                    LEFT JOIN user ON user.idUser = schedule.idUser
+                    LEFT JOIN faculty ON faculty.idFaculty = user.idFaculty
+                    WHERE schedule.idScheduleStatus = ${Constants.ScheduleStatusCode.COMPLETE} AND
+                    (DATE(FROM_UNIXTIME(schedule.startDate)) BETWEEN 
+                    DATE(FROM_UNIXTIME(${startDate})) AND DATE(FROM_UNIXTIME(${endDate})))) as sc 
+                    ON sc.idFaculty = fa.idFaculty
+                GROUP BY fa.idFaculty`;
+        }
 
         db.query(sql, (err, result) => {
             if (err) {
@@ -606,7 +624,13 @@ const getAnalysisTotalTripsOfFaculties = async (req, res) => {
                 if (result.length > 0) {
                     data.status = Constants.ApiCode.OK;
                     data.message = Strings.Common.SUCCESS;
-                    data.data = [...result];
+                    data.data = {
+                        date: {
+                            startDate: startDate || null,
+                            endDate: endDate || null,
+                        },
+                        data: [...result],
+                    };
                     res.status(200).send(data);
                 } else {
                     data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
@@ -622,11 +646,289 @@ const getAnalysisTotalTripsOfFaculties = async (req, res) => {
     }
 };
 
+const getDataAnalysisTotalTripsOfFaculties = async (req, res) => {
+    let {
+        page,
+        limitEntry,
+        startDate,
+        endDate,
+        haveSchedule,
+        status,
+        carType,
+        faculty,
+        infoUser,
+        infoDriver,
+        licensePlates,
+        scheduleCode,
+        address,
+        idWard,
+        startDateSchedule,
+        endDateSchedule,
+        getAllData,
+    } = req.body;
+    page = parseInt(page) || Constants.Common.PAGE;
+    limitEntry = parseInt(limitEntry) || Constants.Common.LIMIT_ENTRY;
+
+    let data = { ...Constants.ResultData };
+    let dataList = { ...Constants.ResultDataList };
+
+    if (req.userToken) {
+        if (
+            (status && !helper.isArray(status)) ||
+            (carType && !helper.isArray(carType)) ||
+            (faculty && !helper.isArray(faculty))
+        ) {
+            data.status = Constants.ApiCode.BAD_REQUEST;
+            data.message = Strings.Common.INVALID_DATA;
+            res.status(200).send(data);
+        } else {
+            let sqlExecuteQuery = `SELECT COUNT(fa.idFaculty) as sizeQuerySnapshot
+            FROM faculty as fa
+            LEFT JOIN 
+                (SELECT schedule.*, faculty.idFaculty
+                FROM schedule
+                LEFT JOIN user ON user.idUser = schedule.idUser
+                LEFT JOIN faculty ON faculty.idFaculty = user.idFaculty
+                WHERE schedule.idScheduleStatus = ${Constants.ScheduleStatusCode.COMPLETE}) as sc 
+                ON sc.idFaculty = fa.idFaculty
+            LEFT JOIN user as us ON us.idUser = sc.idUser
+            LEFT JOIN user as dr ON dr.idUser = sc.idDriver
+            LEFT JOIN schedule_status as ss ON ss.idScheduleStatus = sc.idScheduleStatus
+            LEFT JOIN car as ca ON ca.idCar = sc.idCar
+            LEFT JOIN car_type as ct ON ct.idCarType = ca.idCarType
+            WHERE 1=1 `;
+
+            let sql = `SELECT 
+                fa.name as nameFaculty, sc.idSchedule, sc.startDate, sc.endDate, sc.reason,
+                us.code as codeUser, us.fullName as fullNameUser
+            FROM faculty as fa
+            LEFT JOIN 
+                (SELECT schedule.*, faculty.idFaculty
+                FROM schedule
+                LEFT JOIN user ON user.idUser = schedule.idUser
+                LEFT JOIN faculty ON faculty.idFaculty = user.idFaculty
+                WHERE schedule.idScheduleStatus = ${Constants.ScheduleStatusCode.COMPLETE}) as sc 
+                ON sc.idFaculty = fa.idFaculty
+            LEFT JOIN user as us ON us.idUser = sc.idUser
+            LEFT JOIN user as dr ON dr.idUser = sc.idDriver
+            LEFT JOIN schedule_status as ss ON ss.idScheduleStatus = sc.idScheduleStatus
+            LEFT JOIN car as ca ON ca.idCar = sc.idCar
+            LEFT JOIN car_type as ct ON ct.idCarType = ca.idCarType
+            WHERE 1 = 1 `;
+
+            if (startDate && endDate) {
+                startDate = helper.formatTimeStamp(startDate);
+                endDate = helper.formatTimeStamp(endDate);
+
+                sqlExecuteQuery = `SELECT COUNT(fa.idFaculty) as sizeQuerySnapshot
+                FROM faculty as fa
+                LEFT JOIN 
+                    (SELECT schedule.*, faculty.idFaculty
+                    FROM schedule
+                    LEFT JOIN user ON user.idUser = schedule.idUser
+                    LEFT JOIN faculty ON faculty.idFaculty = user.idFaculty
+                    WHERE schedule.idScheduleStatus = ${Constants.ScheduleStatusCode.COMPLETE} AND
+                    (DATE(FROM_UNIXTIME(schedule.startDate)) BETWEEN 
+                    DATE(FROM_UNIXTIME(${startDate})) AND DATE(FROM_UNIXTIME(${endDate})))
+                    ) as sc ON sc.idFaculty = fa.idFaculty
+                LEFT JOIN user as us ON us.idUser = sc.idUser
+                LEFT JOIN user as dr ON dr.idUser = sc.idDriver
+                LEFT JOIN schedule_status as ss ON ss.idScheduleStatus = sc.idScheduleStatus
+                LEFT JOIN car as ca ON ca.idCar = sc.idCar
+                LEFT JOIN car_type as ct ON ct.idCarType = ca.idCarType
+                WHERE 1=1 `;
+
+                sql = `SELECT 
+                    fa.name as nameFaculty, sc.idSchedule, sc.startDate, sc.endDate, sc.reason,
+                    us.code as codeUser, us.fullName as fullNameUser
+                FROM faculty as fa
+                LEFT JOIN 
+                    (SELECT schedule.*, faculty.idFaculty
+                    FROM schedule
+                    LEFT JOIN user ON user.idUser = schedule.idUser
+                    LEFT JOIN faculty ON faculty.idFaculty = user.idFaculty
+                    WHERE schedule.idScheduleStatus = ${Constants.ScheduleStatusCode.COMPLETE} AND
+                    (DATE(FROM_UNIXTIME(schedule.startDate)) BETWEEN 
+                    DATE(FROM_UNIXTIME(${startDate})) AND DATE(FROM_UNIXTIME(${endDate})))
+                    ) as sc ON sc.idFaculty = fa.idFaculty
+                LEFT JOIN user as us ON us.idUser = sc.idUser
+                LEFT JOIN user as dr ON dr.idUser = sc.idDriver
+                LEFT JOIN schedule_status as ss ON ss.idScheduleStatus = sc.idScheduleStatus
+                LEFT JOIN car as ca ON ca.idCar = sc.idCar
+                LEFT JOIN car_type as ct ON ct.idCarType = ca.idCarType
+                WHERE 1 = 1 `;
+            }
+
+            // CHECK CONDITION SQL
+            let conditionSql = "";
+            if (status && status.length > 0) {
+                let sqlTemp = "";
+                for (let i = 0; i < status.length; i++) {
+                    if (!helper.isNullOrEmpty(status[i])) {
+                        if (i == 0) {
+                            if (status.length > 1) {
+                                sqlTemp += ` AND ( sc.idScheduleStatus = '${status[i]}' `;
+                            } else {
+                                sqlTemp += ` AND ( sc.idScheduleStatus = '${status[i]}' ) `;
+                            }
+                        } else if (i == status.length - 1) {
+                            sqlTemp += ` OR sc.idScheduleStatus = '${status[i]}' ) `;
+                        } else {
+                            sqlTemp += ` OR sc.idScheduleStatus = '${status[i]}' `;
+                        }
+                    }
+                }
+                conditionSql += sqlTemp;
+            }
+            if (carType && carType.length > 0) {
+                let sqlTemp = "";
+                for (let i = 0; i < carType.length; i++) {
+                    if (!helper.isNullOrEmpty(carType[i])) {
+                        if (i == 0) {
+                            if (carType.length > 1) {
+                                sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' `;
+                            } else {
+                                sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' ) `;
+                            }
+                        } else if (i == carType.length - 1) {
+                            sqlTemp += ` OR ct.idCarType = '${carType[i]}' ) `;
+                        } else {
+                            sqlTemp += ` OR ct.idCarType = '${carType[i]}' `;
+                        }
+                    }
+                }
+                conditionSql += sqlTemp;
+            }
+            if (faculty && faculty.length > 0) {
+                let sqlTemp = "";
+                for (let i = 0; i < faculty.length; i++) {
+                    if (!helper.isNullOrEmpty(faculty[i])) {
+                        if (i == 0) {
+                            if (faculty.length > 1) {
+                                sqlTemp += ` AND ( fa.idFaculty = '${faculty[i]}' `;
+                            } else {
+                                sqlTemp += ` AND ( fa.idFaculty = '${faculty[i]}' ) `;
+                            }
+                        } else if (i == faculty.length - 1) {
+                            sqlTemp += ` OR fa.idFaculty = '${faculty[i]}' ) `;
+                        } else {
+                            sqlTemp += ` OR fa.idFaculty = '${faculty[i]}' `;
+                        }
+                    }
+                }
+                conditionSql += sqlTemp;
+            }
+            if (!helper.isNullOrEmpty(scheduleCode)) {
+                conditionSql += ` AND (sc.idSchedule = '${scheduleCode}') `;
+            }
+            if (!helper.isNullOrEmpty(haveSchedule)) {
+                if (helper.convertStringBooleanToBoolean(haveSchedule)) {
+                    conditionSql += ` AND (sc.idSchedule IS NOT NULL) `;
+                } else {
+                    conditionSql += ` AND (sc.idSchedule IS NULL) `;
+                }
+            }
+            if (!helper.isNullOrEmpty(address)) {
+                conditionSql += ` AND (sc.startLocation LIKE '%${address}%') `;
+            }
+            if (!helper.isNullOrEmpty(infoUser)) {
+                conditionSql += ` AND (us.fullName LIKE '%${infoUser}%' OR us.code LIKE '%${infoUser}%') `;
+            }
+            if (!helper.isNullOrEmpty(infoDriver)) {
+                conditionSql += ` AND (dr.fullName LIKE '%${infoDriver}%' OR dr.code LIKE '%${infoDriver}%') `;
+            }
+            if (!helper.isNullOrEmpty(licensePlates)) {
+                conditionSql += ` AND (ca.licensePlates LIKE '%${licensePlates}%') `;
+            }
+            if (!helper.isNullOrEmpty(idWard)) {
+                conditionSql += ` AND (sc.idWardStartLocation = '${idWard}' OR sc.idWardEndLocation = '${idWard}') `;
+            }
+            if (
+                helper.formatTimeStamp(startDateSchedule) &&
+                helper.formatTimeStamp(endDateSchedule)
+            ) {
+                const startTimeStamp =
+                    helper.formatTimeStamp(startDateSchedule);
+                const endTimeStamp = helper.formatTimeStamp(endDateSchedule);
+                conditionSql += ` AND (( DATE(FROM_UNIXTIME(${startTimeStamp})) BETWEEN DATE(FROM_UNIXTIME(sc.startDate)) AND DATE(FROM_UNIXTIME(sc.endDate))) 
+                OR ( DATE(FROM_UNIXTIME(${endTimeStamp})) BETWEEN DATE(FROM_UNIXTIME(sc.startDate)) AND DATE(FROM_UNIXTIME(sc.endDate))) 
+                OR (DATE(FROM_UNIXTIME(sc.startDate)) BETWEEN DATE(FROM_UNIXTIME(${startTimeStamp})) AND DATE(FROM_UNIXTIME(${endTimeStamp}))) 
+                OR (DATE(FROM_UNIXTIME(sc.endDate)) BETWEEN DATE(FROM_UNIXTIME(${startTimeStamp})) AND DATE(FROM_UNIXTIME(${endTimeStamp})))) `;
+            }
+
+            const resultExecuteQuery = await executeQuery(
+                db,
+                `${sqlExecuteQuery} ${conditionSql}`
+            );
+
+            if (!resultExecuteQuery) {
+                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                data.message = Strings.Common.ERROR_GET_DATA;
+                res.status(200).send(data);
+            } else {
+                // CHECK GET ALL DATA => NOT LIMIT DATA
+                if (
+                    getAllData &&
+                    helper.convertStringBooleanToBoolean(getAllData)
+                ) {
+                    sql = sql + conditionSql;
+                } else {
+                    sql =
+                        sql +
+                        conditionSql +
+                        ` LIMIT ${
+                            limitEntry * page - limitEntry
+                        }, ${limitEntry}`;
+                }
+
+                db.query(sql, (err, result) => {
+                    if (err) {
+                        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                        data.message = Strings.Common.ERROR;
+                        res.status(200).send(data);
+                    } else {
+                        dataList.status = Constants.ApiCode.OK;
+                        dataList.message = Strings.Common.SUCCESS;
+
+                        if (
+                            getAllData &&
+                            helper.convertStringBooleanToBoolean(getAllData)
+                        ) {
+                            dataList.limitEntry =
+                                resultExecuteQuery[0].sizeQuerySnapshot;
+                        } else {
+                            dataList.limitEntry = limitEntry;
+                        }
+
+                        dataList.page = page;
+                        dataList.sizeQuerySnapshot =
+                            resultExecuteQuery[0].sizeQuerySnapshot;
+
+                        dataList.data = {
+                            date: {
+                                startDate: startDate || null,
+                                endDate: endDate || null,
+                            },
+                            data: [...result],
+                        };
+                        res.status(200).send(dataList);
+                    }
+                });
+            }
+        }
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
+
 module.exports = {
     getAnalysisTotalCommon,
     getTotalNumberOfTripsOverTime,
     getDataTotalNumberOfTripsOverTime,
     getAnalysisDriverLicense,
     getDataAnalysisDriverLicense,
-    getAnalysisTotalTripsOfFaculties
+    getAnalysisTotalTripsOfFaculties,
+    getDataAnalysisTotalTripsOfFaculties,
 };
