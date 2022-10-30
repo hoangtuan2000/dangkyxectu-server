@@ -207,4 +207,16 @@ router.post(
     analysisAdminControllers.getDataAnalysisTotalTripsOfFaculties
 );
 
+router.post(
+    "/getAnalysisTotalTripsOfDriver",
+    authenticationControllers.authenticationAdmin,
+    analysisAdminControllers.getAnalysisTotalTripsOfDriver
+);
+
+router.post(
+    "/getDataAnalysisTotalTripsOfDriver",
+    authenticationControllers.authenticationAdmin,
+    analysisAdminControllers.getDataAnalysisTotalTripsOfDriver
+);
+
 module.exports = router;
