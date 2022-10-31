@@ -22,6 +22,7 @@ const getCar = async (req, res) => {
 };
 
 const getCarList = async (req, res) => {
+    console.log('call getCarList');
     let data = { ...Constants.ResultData };
     db.query(
         `SELECT 
