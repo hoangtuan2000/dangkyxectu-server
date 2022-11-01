@@ -123,9 +123,11 @@ const getCarListForAdmin = async (req, res) => {
                     conditionSql += ` AND (licenseExpired.licenseNumberExpired IS NULL) `;
             }
             if (!helper.isNullOrEmpty(haveTrip)) {
-                if (haveTrip === true)
+                if (helper.convertStringBooleanToBoolean(haveTrip) === true)
                     conditionSql += ` AND (trip.numberOfTrips IS NOT NULL) `;
-                else if (haveTrip === false)
+                else if (
+                    helper.convertStringBooleanToBoolean(haveTrip) === false
+                )
                     conditionSql += ` AND (trip.numberOfTrips IS NULL) `;
             }
             if (!helper.isNullOrEmpty(haveMaintenance)) {
