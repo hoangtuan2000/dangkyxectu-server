@@ -108,7 +108,7 @@ const getUserRegisteredScheduleList = async (req, res) => {
                 res.status(200).send(data);
             } else {
                 let sql = `SELECT
-                                sc.idSchedule, sc.reason, sc.startDate, sc.endDate, sc.endLocation,
+                                sc.idSchedule, sc.reason, sc.startDate, sc.endDate, sc.endLocation, sc.idScheduleStatus,
                                 ca.idCar, ca.image, ca.licensePlates, ca.idCarType,
                                 ct.name as carType, ct.seatNumber,
                                 ss.name as scheduleStatus,
