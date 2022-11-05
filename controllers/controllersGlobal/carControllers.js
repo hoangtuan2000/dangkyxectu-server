@@ -7,7 +7,14 @@ const { helper } = require("../../common/helper");
 const getCar = async (req, res) => {
     const { idCar } = req.body;
     let data = { ...Constants.ResultData };
-    const sql = `SELECT * FROM car WHERE idCar = ?`;
+    const sql = `SELECT ca.*, cs.name as nameCarStatus, cc.name as nameCarColor, 
+            cb.name as nameCarBrand, ct.name as nameCarType, ct.seatNumber
+        FROM car as ca
+        LEFT JOIN car_status as cs ON cs.idCarStatus = ca.idCarStatus
+        LEFT JOIN car_color as cc ON cc.idCarColor = ca.idCarColor
+        LEFT JOIN car_brand as cb ON cb.idCarBrand = ca.idCarBrand
+        LEFT JOIN car_type as ct ON ct.idCarType = ca.idCarType 
+        WHERE idCar = ?`;
     db.query(sql, [idCar], (err, result) => {
         //error select data
         if (err) {
