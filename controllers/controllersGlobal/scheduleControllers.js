@@ -12,6 +12,7 @@ const getSchedule = async (req, res) => {
                     sc.createdAt, sc.updatedAt, sc.reasonCancel, 
                     ca.idCar, ca.image, ca.licensePlates, ca.idCarType, ca.idCarColor, ca.idCarBrand, ca.idCarStatus,
                     ct.name as carType, ct.seatNumber,
+                    cc.name as carColor,
                     ss.name as scheduleStatus, ss.idScheduleStatus,
                     re.idReview, re.starNumber, re.comment as commentReview,
                     cb.name as carBrand,
@@ -32,6 +33,7 @@ const getSchedule = async (req, res) => {
                 LEFT JOIN car_type as ct ON ca.idCarType = ct.idCarType
                 LEFT JOIN schedule_status as ss ON ss.idScheduleStatus = sc.idScheduleStatus
                 LEFT JOIN car_brand as cb ON cb.idCarBrand = ca.idCarBrand
+                LEFT JOIN car_color as cc ON cc.idCarColor = ca.idCarColor
                 LEFT JOIN car_status as cs ON cs.idCarStatus = ca.idCarStatus
                 LEFT JOIN ward as ws ON ws.idWard = sc.idWardEndLocation
                 LEFT JOIN district as ds ON ds.idDistrict = ws.idDistrict

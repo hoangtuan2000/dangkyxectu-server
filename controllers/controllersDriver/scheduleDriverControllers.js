@@ -110,7 +110,7 @@ const getDriverScheduleList = async (req, res) => {
                                 sc.idSchedule, sc.startDate, sc.endDate, sc.endLocation, sc.startLocation,
                                 ca.idCar, ca.image, ca.licensePlates, ca.idCarType,
                                 ct.name as carType, ct.seatNumber,
-                                ss.name as scheduleStatus,
+                                ss.idScheduleStatus, ss.name as scheduleStatus,
                                 ws.name as wardStart, ds.name as districtStart, ps.name as provinceStart,
                                 we.name as wardEnd, de.name as districtEnd, pe.name as provinceEnd
                             FROM schedule as sc
