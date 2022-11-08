@@ -321,18 +321,18 @@ const createBrokenCarParts = async (req, res) => {
                     arrayIdCarParts.length == arrayComment.length
                 ) {
                     const idUser = req.userToken.idUser;
-                    const isReceiveCar = req.updateIsCarFailBeforeRun ? 1 : 0;
+                    const isBeforeCarRuns = req.updateIsCarFailBeforeRun ? 1 : 0;
                     const currentDate = helper.formatTimeStamp(
                         new Date().getTime()
                     );
-                    const sql = `INSERT INTO broken_car_parts(image, comment, isReceiveCar, createdAt, idSchedule, idCarParts, idUserCreated) VALUES ?`;
+                    const sql = `INSERT INTO broken_car_parts(image, comment, isBeforeCarRuns, createdAt, idSchedule, idCarParts, idUserCreated) VALUES ?`;
                     // FORMAT DATA
                     let arrayData = [];
                     for (let i = 0; i < arrayIdCarParts.length; i++) {
                         let arr = [
                             req.arrayUrlImagesFirebase[i],
                             arrayComment[i],
-                            isReceiveCar,
+                            isBeforeCarRuns,
                             currentDate,
                             idSchedule,
                             arrayIdCarParts[i],
@@ -340,8 +340,10 @@ const createBrokenCarParts = async (req, res) => {
                         ];
                         arrayData.push(arr);
                     }
+                    console.log('arrayData', arrayData);
                     db.beginTransaction(function (err) {
                         if (err) {
+                            console.log('err createBrokenCarParts 1');
                             data.status =
                                 Constants.ApiCode.INTERNAL_SERVER_ERROR;
                             data.message = Strings.Common.ERROR;
@@ -349,6 +351,7 @@ const createBrokenCarParts = async (req, res) => {
                         }
                         db.query(sql, [arrayData], function (error, results) {
                             if (error) {
+                                console.log('err createBrokenCarParts 2', error);
                                 return db.rollback(function () {
                                     data.status =
                                         Constants.ApiCode.INTERNAL_SERVER_ERROR;
@@ -359,6 +362,7 @@ const createBrokenCarParts = async (req, res) => {
                                 if (results.affectedRows > 0) {
                                     db.commit(function (err) {
                                         if (err) {
+                                            console.log('err createBrokenCarParts 3');
                                             return db.rollback(function () {
                                                 data.status =
                                                     Constants.ApiCode.INTERNAL_SERVER_ERROR;
@@ -374,6 +378,7 @@ const createBrokenCarParts = async (req, res) => {
                                         }
                                     });
                                 } else {
+                                    console.log('err createBrokenCarParts 4');
                                     data.status =
                                         Constants.ApiCode.INTERNAL_SERVER_ERROR;
                                     data.message = Strings.Common.ERROR;
@@ -384,6 +389,7 @@ const createBrokenCarParts = async (req, res) => {
                     });
                 }
             } else {
+                console.log('err createBrokenCarParts 5');
                 data.status = Constants.ApiCode.BAD_REQUEST;
                 data.message = Strings.Common.INVALID_DATA;
                 res.status(200).send(data);
@@ -394,6 +400,7 @@ const createBrokenCarParts = async (req, res) => {
             res.status(200).send(data);
         }
     } else {
+        console.log('err createBrokenCarParts 6');
         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
         data.message = Strings.Common.USER_NOT_EXIST;
         res.status(200).send(data);

@@ -35,7 +35,7 @@ const getSchedule = async (req, res) => {
                 LEFT JOIN car_brand as cb ON cb.idCarBrand = ca.idCarBrand
                 LEFT JOIN car_color as cc ON cc.idCarColor = ca.idCarColor
                 LEFT JOIN car_status as cs ON cs.idCarStatus = ca.idCarStatus
-                LEFT JOIN ward as ws ON ws.idWard = sc.idWardEndLocation
+                LEFT JOIN ward as ws ON ws.idWard = sc.idWardStartLocation
                 LEFT JOIN district as ds ON ds.idDistrict = ws.idDistrict
                 LEFT JOIN province as ps ON ps.idProvince = ds.idProvince
                 LEFT JOIN ward as we ON we.idWard = sc.idWardEndLocation

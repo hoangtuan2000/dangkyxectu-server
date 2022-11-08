@@ -12,13 +12,13 @@ const imageFilter = function (req, file, cb) {
 const uploadImageMulter = multer({
     storage: multer.memoryStorage(),
     fileFilter: imageFilter,
-    limits: { fileSize: 3145728 }, //file size 3MB
+    limits: { fileSize: 5242880 }, //file size 5MB
 }).single("imageCar");
 
 const uploadMultipleImageMulter = multer({
     storage: multer.memoryStorage(),
     fileFilter: imageFilter,
-    limits: { fileSize: 3145728 }, //file size 3MB
+    limits: { fileSize: 5242880 }, //file size 5MB
 }).array("multipleImages", 8);
 
 module.exports = { uploadImageMulter, uploadMultipleImageMulter };
