@@ -961,7 +961,7 @@ const getAnalysisTotalTripsOfDriver = async (req, res) => {
                 data.message = Strings.Common.ERROR_SERVER;
                 res.status(200).send(data);
             } else {
-                if (result.length > 0) {
+                // if (result.length > 0) {
                     data.status = Constants.ApiCode.OK;
                     data.message = Strings.Common.SUCCESS;
                     data.data = {
@@ -972,11 +972,11 @@ const getAnalysisTotalTripsOfDriver = async (req, res) => {
                         data: [...result],
                     };
                     res.status(200).send(data);
-                } else {
-                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-                    data.message = Strings.Common.ERROR_GET_DATA;
-                    res.status(200).send(data);
-                }
+                // } else {
+                //     data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                //     data.message = Strings.Common.ERROR_GET_DATA;
+                //     res.status(200).send(data);
+                // }
             }
         });
     } else {
