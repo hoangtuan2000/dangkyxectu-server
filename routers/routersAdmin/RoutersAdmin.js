@@ -55,6 +55,7 @@ router.post(
 router.post(
     "/changeCarSchedule",
     authenticationControllers.authenticationAdmin,
+    scheduleAdminControllers.checkCarHasDuplicateSchedule,
     scheduleAdminControllers.changeCarSchedule,
     scheduleAdminControllers.sendNotificationEmailChangeCarSchedule
 );

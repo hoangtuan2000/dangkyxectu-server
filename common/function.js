@@ -29,6 +29,7 @@ const sendEmailCreateOrUpdateSchedule = (
     colorScheduleStatus,
     dateRange,
     reason,
+    note,
     startLocation,
     endLocation,
     fullNameUser,
@@ -174,6 +175,10 @@ const sendEmailCreateOrUpdateSchedule = (
                                         <p>
                                             <span class="textContent">Mục đích sử dụng xe:</span>
                                             ${reason}
+                                        </p>
+                                        <p>
+                                            <span class="textContent">Ghi Chú:</span>
+                                            ${note}
                                         </p>
                                         <p>
                                             <span class="textContent">Vị trí bắt đầu:</span>

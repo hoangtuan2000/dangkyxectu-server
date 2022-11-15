@@ -10,15 +10,15 @@ const { Constants } = require("../../constants/Constants");
 const { Strings } = require("../../constants/Strings");
 
 const login = async (req, res) => {
-    const { code, password } = req.body;
+    const { code, pass } = req.body;
     let data = { ...Constants.ResultData };
     ldapClient.ldapClient.bind(
         `cn=${code},${process.env.DN_LDAP_COMMON}`,
-        password,
+        pass,
         function (err) {
             // error authentication ldap server
             if (err) {
-                // error idUser or password incorrect
+                // error idUser or pass incorrect
                 if (err.name == new ldap.InvalidCredentialsError().name) {
                     data.status = Constants.ApiCode.UNAUTHORIZED;
                     data.message = Strings.Common.ERROR_PASSWORD_USERID;

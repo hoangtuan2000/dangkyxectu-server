@@ -268,8 +268,8 @@ const getDriverListForSchedule = async (req, res) => {
     let data = { ...Constants.ResultData };
 
     if (req.userToken) {
-        const startTimeStamp = helper.formatTimeStamp(startDate);
-        const endTimeStamp = helper.formatTimeStamp(endDate);
+        // const startTimeStamp = helper.formatTimeStamp(startDate);
+        // const endTimeStamp = helper.formatTimeStamp(endDate);
         let sql = `
                 SELECT dr.idUser as idDriver, dr.fullName as fullNameDriver, dr.code as codeDriver
                 FROM user as dr
@@ -283,10 +283,10 @@ const getDriverListForSchedule = async (req, res) => {
                     AND dr.idUser NOT IN 
                         (SELECT idDriver 
                         FROM schedule as sc
-                        WHERE (( DATE(FROM_UNIXTIME(${startTimeStamp})) BETWEEN DATE(FROM_UNIXTIME(sc.startDate)) AND DATE(FROM_UNIXTIME(sc.endDate))) 
-                            OR ( DATE(FROM_UNIXTIME(${endTimeStamp})) BETWEEN DATE(FROM_UNIXTIME(sc.startDate)) AND DATE(FROM_UNIXTIME(sc.endDate))) 
-                            OR (DATE(FROM_UNIXTIME(sc.startDate)) BETWEEN DATE(FROM_UNIXTIME(${startTimeStamp})) AND DATE(FROM_UNIXTIME(${endTimeStamp}))) 
-                            OR (DATE(FROM_UNIXTIME(sc.endDate)) BETWEEN DATE(FROM_UNIXTIME(${startTimeStamp})) AND DATE(FROM_UNIXTIME(${endTimeStamp})))) 
+                        WHERE (( DATE(FROM_UNIXTIME(${startDate})) BETWEEN DATE(FROM_UNIXTIME(sc.startDate)) AND DATE(FROM_UNIXTIME(sc.endDate))) 
+                            OR ( DATE(FROM_UNIXTIME(${endDate})) BETWEEN DATE(FROM_UNIXTIME(sc.startDate)) AND DATE(FROM_UNIXTIME(sc.endDate))) 
+                            OR (DATE(FROM_UNIXTIME(sc.startDate)) BETWEEN DATE(FROM_UNIXTIME(${startDate})) AND DATE(FROM_UNIXTIME(${endDate}))) 
+                            OR (DATE(FROM_UNIXTIME(sc.endDate)) BETWEEN DATE(FROM_UNIXTIME(${startDate})) AND DATE(FROM_UNIXTIME(${endDate})))) 
                             AND idScheduleStatus = ${Constants.ScheduleStatusCode.APPROVED} )`;
         db.query(sql, [idCar], (err, result) => {
             if (err) {
@@ -496,148 +496,10 @@ const getScheduleListOfDriver = async (req, res) => {
     }
 };
 
-// const updateSchedule = async (req, res) => {
-//     let { idSchedule, idScheduleStatus, idDriver } = req.body;
-//     let data = { ...Constants.ResultData };
-
-//     const executeUpdate = (SQL) => {
-//         db.query(SQL, (err, result) => {
-//             if (err) {
-//                 data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-//                 data.message = Strings.Common.ERROR_SERVER;
-//                 res.status(200).send(data);
-//             } else {
-//                 if (result.changedRows > 0) {
-//                     data.status = Constants.ApiCode.OK;
-//                     data.message = Strings.Common.SUCCESS;
-//                     res.status(200).send(data);
-//                 } else {
-//                     data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-//                     data.message = Strings.Common.ERROR_SERVER;
-//                     res.status(200).send(data);
-//                 }
-//             }
-//         });
-//     };
-
-//     if (req.userToken) {
-//         const idAdmin = req.userToken.idUser;
-//         // get schedule status old and date
-//         let sqlExecuteQuery = `SELECT idScheduleStatus, startDate, idDriver FROM schedule WHERE idSchedule = ${idSchedule}`;
-//         const resultExecuteQuery = await executeQuery(db, sqlExecuteQuery);
-
-//         if (!resultExecuteQuery) {
-//             data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-//             data.message = Strings.Common.ERROR_GET_DATA;
-//             res.status(200).send(data);
-//         } else {
-//             const idScheduleStatusOld =
-//                 (resultExecuteQuery &&
-//                     resultExecuteQuery.length > 0 &&
-//                     resultExecuteQuery[0].idScheduleStatus) ||
-//                 null;
-//             const idDriverOld =
-//                 (resultExecuteQuery &&
-//                     resultExecuteQuery.length > 0 &&
-//                     resultExecuteQuery[0].idDriver) ||
-//                 null;
-//             // check data => format SQL
-//             if (
-//                 (idScheduleStatusOld == Constants.ScheduleStatusCode.PENDING &&
-//                     helper.isDateTimeStampGreaterThanCurrentDate(
-//                         resultExecuteQuery[0].startDate
-//                     )) ||
-//                 idScheduleStatusOld == Constants.ScheduleStatusCode.APPROVED
-//             ) {
-//                 let sql = "";
-//                 const currentDate = helper.formatTimeStamp(
-//                     new Date().getTime()
-//                 );
-//                 switch (idScheduleStatusOld) {
-//                     // if idScheduleStatus old is pending => (check startDate < current date)
-//                     case Constants.ScheduleStatusCode.PENDING:
-//                         // check: idScheduleStatus new is approved => update status and driver (check startDate < current date)
-//                         if (
-//                             idScheduleStatus ==
-//                                 Constants.ScheduleStatusCode.APPROVED &&
-//                             idDriver
-//                         ) {
-//                             sql = `UPDATE schedule SET updatedAt=${currentDate}, idAdmin=${idAdmin},
-//                             idDriver=${idDriver}, idScheduleStatus=${idScheduleStatus} WHERE idSchedule = ${idSchedule}`;
-//                             executeUpdate(sql);
-//                         }
-//                         // the updated data is the same as the server data => Old dScheduleStatus = New idScheduleStatus
-//                         else if (
-//                             idScheduleStatus ==
-//                             Constants.ScheduleStatusCode.PENDING
-//                         ) {
-//                             data.status = Constants.ApiCode.BAD_REQUEST;
-//                             data.message = Strings.Common.INVALID_DATA;
-//                             res.status(200).send(data);
-//                         }
-//                         // if idScheduleStatus new not is approved => only update status REFUSE
-//                         else if (
-//                             idScheduleStatus ==
-//                             Constants.ScheduleStatusCode.REFUSE
-//                         ) {
-//                             sql = `UPDATE schedule SET updatedAt=${currentDate}, idAdmin=${idAdmin},
-//                              idScheduleStatus=${idScheduleStatus} WHERE idSchedule = ${idSchedule}`;
-//                             executeUpdate(sql);
-//                         } else {
-//                             data.status = Constants.ApiCode.BAD_REQUEST;
-//                             data.message = Strings.Common.INVALID_DATA;
-//                             res.status(200).send(data);
-//                         }
-//                         break;
-
-//                     // if idScheduleStatus old is approved => update status complete (check startDate >= current date)
-//                     case Constants.ScheduleStatusCode.APPROVED:
-//                         // complete schedule
-//                         if (
-//                             idScheduleStatus ==
-//                                 Constants.ScheduleStatusCode.COMPLETE &&
-//                             !helper.isDateTimeStampGreaterThanCurrentDate(
-//                                 resultExecuteQuery[0].startDate
-//                             )
-//                         ) {
-//                             sql = `UPDATE schedule SET updatedAt=${currentDate}, idAdmin=${idAdmin},
-//                                  idScheduleStatus=${idScheduleStatus} WHERE idSchedule = ${idSchedule}`;
-//                             executeUpdate(sql);
-//                         }
-//                         // UPDATE DRIVER
-//                         else if (
-//                             helper.isDateTimeStampGreaterThanCurrentDate(
-//                                 resultExecuteQuery[0].startDate
-//                             ) &&
-//                             idDriver &&
-//                             idDriver != idDriverOld
-//                         ) {
-//                             sql = `UPDATE schedule SET updatedAt=${currentDate}, idAdmin=${idAdmin},
-//                             idDriver=${idDriver} WHERE idSchedule = ${idSchedule}`;
-//                             executeUpdate(sql);
-//                         } else {
-//                             data.status = Constants.ApiCode.BAD_REQUEST;
-//                             data.message = Strings.Common.INVALID_DATA;
-//                             res.status(200).send(data);
-//                         }
-//                         break;
-//                 }
-//             } else {
-//                 data.status = Constants.ApiCode.BAD_REQUEST;
-//                 data.message = Strings.Common.INVALID_REQUEST;
-//                 res.status(200).send(data);
-//             }
-//         }
-//     } else {
-//         ata.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-//         data.message = Strings.Common.USER_NOT_EXIST;
-//         res.status(200).send(data);
-//     }
-// };
-
 const getCarListToChangeCar = async (req, res) => {
     const {
         idCar,
+        idSchedule,
         page,
         limitEntry,
         searchCar,
@@ -652,7 +514,18 @@ const getCarListToChangeCar = async (req, res) => {
         let sqlExecuteQuery = `SELECT COUNT(ca.idCar) as sizeQuerySnapshot 
                                 FROM car as ca
                                 LEFT JOIN car_type as ct ON ct.idCarType = ca.idCarType
-                                WHERE ca.idCar != ?`;
+                                WHERE ca.idCar != ? 
+                                    AND ca.idCar NOT IN (
+                                        SELECT sc.idCar
+                                        FROM schedule as sc, 
+                                            (SELECT * FROM schedule WHERE idSchedule = ${idSchedule}) as a
+                                        WHERE sc.idSchedule != ${idSchedule}
+                                        AND sc.idScheduleStatus IN (${Constants.ScheduleStatusCode.APPROVED}, ${Constants.ScheduleStatusCode.MOVING}, ${Constants.ScheduleStatusCode.RECEIVED}) 
+                                        AND (( DATE(FROM_UNIXTIME(a.startDate)) BETWEEN DATE(FROM_UNIXTIME(sc.startDate)) AND DATE(FROM_UNIXTIME(sc.endDate))) 
+                                        OR ( DATE(FROM_UNIXTIME(a.endDate)) BETWEEN DATE(FROM_UNIXTIME(sc.startDate)) AND DATE(FROM_UNIXTIME(sc.endDate))) 
+                                        OR (DATE(FROM_UNIXTIME(sc.startDate)) BETWEEN DATE(FROM_UNIXTIME(a.startDate)) AND DATE(FROM_UNIXTIME(a.endDate))) 
+                                        OR (DATE(FROM_UNIXTIME(sc.endDate)) BETWEEN DATE(FROM_UNIXTIME(a.startDate)) AND DATE(FROM_UNIXTIME(a.endDate))))
+                                )`;
 
         let conditionSql = "";
         if (searchCar) {
@@ -692,7 +565,22 @@ const getCarListToChangeCar = async (req, res) => {
                             ct.idCarType, ct.name as nameCarType, ct.seatNumber
                         FROM car as ca
                         LEFT JOIN car_type as ct ON ct.idCarType = ca.idCarType
-                        WHERE ca.idCar != ?  ${conditionSql}
+                        WHERE ca.idCar != ? 
+                            AND ca.idCar NOT IN (
+                                SELECT sc.idCar
+                                FROM schedule as sc, 
+                                    (SELECT * FROM schedule WHERE idSchedule = ${idSchedule}) as a
+                                WHERE sc.idSchedule != ${idSchedule} 
+                                AND sc.idScheduleStatus IN (${
+                                    Constants.ScheduleStatusCode.APPROVED
+                                }, ${Constants.ScheduleStatusCode.MOVING}, ${
+                Constants.ScheduleStatusCode.RECEIVED
+            }) 
+                                AND (( DATE(FROM_UNIXTIME(a.startDate)) BETWEEN DATE(FROM_UNIXTIME(sc.startDate)) AND DATE(FROM_UNIXTIME(sc.endDate))) 
+                                OR ( DATE(FROM_UNIXTIME(a.endDate)) BETWEEN DATE(FROM_UNIXTIME(sc.startDate)) AND DATE(FROM_UNIXTIME(sc.endDate))) 
+                                OR (DATE(FROM_UNIXTIME(sc.startDate)) BETWEEN DATE(FROM_UNIXTIME(a.startDate)) AND DATE(FROM_UNIXTIME(a.endDate))) 
+                                OR (DATE(FROM_UNIXTIME(sc.endDate)) BETWEEN DATE(FROM_UNIXTIME(a.startDate)) AND DATE(FROM_UNIXTIME(a.endDate))))) 
+                                ${conditionSql}
                         LIMIT ${limitEntry * page - limitEntry}, ${limitEntry}`;
 
             db.query(sql, idCar, (err, result) => {
@@ -908,6 +796,46 @@ const updateScheduleApproved = async (req, res) => {
     }
 };
 
+const checkCarHasDuplicateSchedule = async (req, res, next) => {
+    const { idSchedule, idCarNew } = req.body;
+    let data = { ...Constants.ResultData };
+    if (req.userToken) {
+        const sql = `
+            SELECT *
+            FROM car as ca
+            WHERE ca.idCar = ? 
+                AND ca.idCar NOT IN (
+                    SELECT sc.idCar
+                    FROM schedule as sc, 
+                        (SELECT * FROM schedule WHERE idSchedule = ${idSchedule}) as a
+                    WHERE sc.idSchedule != ${idSchedule} 
+                    AND sc.idScheduleStatus IN (${Constants.ScheduleStatusCode.APPROVED}, ${Constants.ScheduleStatusCode.MOVING}, ${Constants.ScheduleStatusCode.RECEIVED}) 
+                    AND (( DATE(FROM_UNIXTIME(a.startDate)) BETWEEN DATE(FROM_UNIXTIME(sc.startDate)) AND DATE(FROM_UNIXTIME(sc.endDate))) 
+                    OR ( DATE(FROM_UNIXTIME(a.endDate)) BETWEEN DATE(FROM_UNIXTIME(sc.startDate)) AND DATE(FROM_UNIXTIME(sc.endDate))) 
+                    OR (DATE(FROM_UNIXTIME(sc.startDate)) BETWEEN DATE(FROM_UNIXTIME(a.startDate)) AND DATE(FROM_UNIXTIME(a.endDate))) 
+                    OR (DATE(FROM_UNIXTIME(sc.endDate)) BETWEEN DATE(FROM_UNIXTIME(a.startDate)) AND DATE(FROM_UNIXTIME(a.endDate))))) `;
+        db.query(sql, idCarNew, (err, result) => {
+            if (err) {
+                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                data.message = Strings.Common.ERROR;
+                res.status(200).send(data);
+            } else {
+                if (result.length > 0) {
+                    next();
+                } else {
+                    data.status = Constants.ApiCode.BAD_REQUEST;
+                    data.message = Strings.Common.CAR_HAS_DUPLICATE_SCHEDULE;
+                    res.status(200).send(data);
+                }
+            }
+        });
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
+
 const changeCarSchedule = async (req, res, next) => {
     let { idSchedule, idCarNew } = req.body;
     let data = { ...Constants.ResultData };
@@ -1034,7 +962,7 @@ const getCarStatusListOfTrips = async (req, res, next) => {
                                     FROM broken_car_parts
                                     GROUP BY idSchedule) as bcp 
                                     ON bcp.idSchedule = sc.idSchedule
-                                WHERE sc.idScheduleStatus NOT IN (${Constants.ScheduleStatusCode.PENDING}, ${Constants.ScheduleStatusCode.APPROVED}) `;
+                                WHERE sc.idScheduleStatus NOT IN (${Constants.ScheduleStatusCode.PENDING}, ${Constants.ScheduleStatusCode.APPROVED}, ${Constants.ScheduleStatusCode.CANCELLED}, ${Constants.ScheduleStatusCode.REFUSE}) `;
 
             let conditionSql = "";
             if (driver && driver.length > 0) {
@@ -1175,7 +1103,7 @@ const getCarStatusListOfTrips = async (req, res, next) => {
                                 FROM broken_car_parts
                                 GROUP BY idSchedule) as bcp
                                 ON bcp.idSchedule = sc.idSchedule
-                            WHERE sc.idScheduleStatus NOT IN (${Constants.ScheduleStatusCode.PENDING}, ${Constants.ScheduleStatusCode.APPROVED}) ${conditionSql}
+                            WHERE sc.idScheduleStatus NOT IN (${Constants.ScheduleStatusCode.PENDING}, ${Constants.ScheduleStatusCode.APPROVED}, ${Constants.ScheduleStatusCode.CANCELLED}, ${Constants.ScheduleStatusCode.REFUSE}) ${conditionSql}
                             ORDER BY FROM_UNIXTIME(sc.startDate) DESC
                             `;
 
@@ -1365,6 +1293,7 @@ module.exports = {
     updateScheduleApproved,
     getCarListToChangeCar,
     sendNotificationEmailUpdateSchedulePeding,
+    checkCarHasDuplicateSchedule,
     changeCarSchedule,
     sendNotificationEmailChangeCarSchedule,
     getCarStatusListOfTrips,

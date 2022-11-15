@@ -181,6 +181,7 @@ const validateUploadImageWhenUpdateCar = async (req, res, next) => {
             data.message = Strings.Common.ONLY_SUPPORT_IMAGE;
             res.status(200).send(data);
         } else {
+            req.changeImage = true
             next();
         }
     });

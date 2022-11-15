@@ -15,6 +15,7 @@ const Strings = {
         NOT_PERMISSION_ACCESS: "Không Có Quyền Truy Cập",
         USER_NOT_EXIST: "Người Dùng Không Tồn Tại",
         DUPLICATE_SCHEDULE: "Lịch Trình Bị Trùng Lặp",
+        CAR_HAS_DUPLICATE_SCHEDULE: "Xe Bị Trùng Lịch Trình",
         INVALID_DATE: "Ngày Không Hợp Lệ",
         INVALID_REQUEST: "Yêu Cầu Không Hợp Lệ",
         INVALID_DATA: "Dữ Liệu Không Hợp Lệ",

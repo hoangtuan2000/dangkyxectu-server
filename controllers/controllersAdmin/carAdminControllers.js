@@ -644,6 +644,7 @@ const validateDataUpdateCar = async (req, res, next) => {
     let data = { ...Constants.ResultData };
 
     if (
+        !req.changeImage &&
         !licensePlates &&
         !idCarColor &&
         !idCarBrand &&
@@ -725,7 +726,9 @@ const validateDataUpdateCar = async (req, res, next) => {
 
 const getImageCar = async (req, res, next) => {
     const { idCar } = req.body;
+    let data = { ...Constants.ResultData };
     const sql = `SELECT image FROM car WHERE idCar = ?`;
+    console.log('idCar', idCar);
     db.query(sql, idCar, (err, result) => {
         if (err) {
             data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;

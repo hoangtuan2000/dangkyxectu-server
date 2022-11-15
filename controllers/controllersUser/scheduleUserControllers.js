@@ -360,27 +360,25 @@ const sendNotificationEmailCancelSchedule = async (req, res) => {
 
     if (req.userToken) {
         const sql = `SELECT 
-                        ad.email as emailAdmin, dr.email as emailDriver, us.email as emailUser
+                        us.email as emailUser
                     FROM schedule as sc
-                    RIGHT JOIN user as ad ON ad.idUser = sc.idAdmin
-                    RIGHT JOIN user as dr ON dr.idUser = sc.idDriver
                     RIGHT JOIN user as us ON us.idUser = sc.idUser
                     WHERE sc.idSchedule = ?`;
         db.query(sql, idSchedule, (err, result) => {
             if (!err) {
                 if (result.length > 0) {
-                    getScheduleToSendEmail(
-                        idSchedule,
-                        result[0].emailDriver,
-                        Strings.Common.CANCEL_SUCCESSFUL_REGISTRATION,
-                        Constants.Styles.COLOR_ERROR
-                    );
-                    getScheduleToSendEmail(
-                        idSchedule,
-                        result[0].emailAdmin,
-                        Strings.Common.CANCEL_SUCCESSFUL_REGISTRATION,
-                        Constants.Styles.COLOR_ERROR
-                    );
+                    // getScheduleToSendEmail(
+                    //     idSchedule,
+                    //     result[0].emailDriver,
+                    //     Strings.Common.CANCEL_SUCCESSFUL_REGISTRATION,
+                    //     Constants.Styles.COLOR_ERROR
+                    // );
+                    // getScheduleToSendEmail(
+                    //     idSchedule,
+                    //     result[0].emailAdmin,
+                    //     Strings.Common.CANCEL_SUCCESSFUL_REGISTRATION,
+                    //     Constants.Styles.COLOR_ERROR
+                    // );
                     getScheduleToSendEmail(
                         idSchedule,
                         result[0].emailUser,
