@@ -38,6 +38,7 @@ const Constants = {
         MAX_LENGTH_CODE: 8,
         MIN_LENGTH_PASSWORD: 5,
         MAX_LENGTH_PASSWORD: 15,
+        MAX_LENGTH_MAINTENANCE_DESCRIPTION: 500,
     },
 
     RoleCode: {
@@ -114,7 +115,7 @@ const Constants = {
         COLOR_BLUE_LIGHT: "#29b6f6",
         COLOR_BLUE_GREEN: "#03a882",
         COLOR_YELLOW_GREEN: "#ab8e00",
-        COLOR_WARNING: '#fcba03'
+        COLOR_WARNING: "#fcba03",
     },
 };
 

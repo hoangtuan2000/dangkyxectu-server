@@ -15,10 +15,16 @@ const uploadImageMulter = multer({
     limits: { fileSize: 5242880 }, //file size 5MB
 }).single("imageCar");
 
+const uploadImage = multer({
+    storage: multer.memoryStorage(),
+    fileFilter: imageFilter,
+    limits: { fileSize: 5242880 }, //file size 5MB
+}).single("image");
+
 const uploadMultipleImageMulter = multer({
     storage: multer.memoryStorage(),
     fileFilter: imageFilter,
     limits: { fileSize: 5242880 }, //file size 5MB
 }).array("multipleImages", 8);
 
-module.exports = { uploadImageMulter, uploadMultipleImageMulter };
+module.exports = { uploadImageMulter, uploadMultipleImageMulter, uploadImage };

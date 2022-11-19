@@ -57,6 +57,7 @@ const Strings = {
         SUPPORT_EMAIL: `Email Không Đúng Định Dạng`,
         SUPPORT_PASSWORD: `Mật Khẩu Từ ${Constants.Common.MIN_LENGTH_PASSWORD} - ${Constants.Common.MAX_LENGTH_PASSWORD} Ký Tự`,
         SUPPORT_PHONE: `Số Điện Thoại Không Đúng Định Dạng`,
+        SUPPORT_LENGTH_MAINTENANCE_DESCRIPTION: `Chỉ cho phép nhập mô tả dưới ${Constants.Common.MAX_LENGTH_MAINTENANCE_DESCRIPTION}`,
     },
 };
 

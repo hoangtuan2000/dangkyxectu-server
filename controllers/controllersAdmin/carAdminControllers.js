@@ -170,6 +170,7 @@ const getCarListForAdmin = async (req, res) => {
                                 (SELECT COUNT(schedule.idCar) as numberOfTrips, car.idCar
                                     FROM car, schedule 
                                     WHERE car.idCar = schedule.idCar
+                                    AND schedule.idScheduleStatus IN (${Constants.ScheduleStatusCode.COMPLETE})
                                     GROUP BY schedule.idCar) as trip ON trip.idCar = ca.idCar
                             LEFT JOIN 
                                 (SELECT COUNT(idCar) as numberOfMaintenance, idCar
@@ -728,7 +729,7 @@ const getImageCar = async (req, res, next) => {
     const { idCar } = req.body;
     let data = { ...Constants.ResultData };
     const sql = `SELECT image FROM car WHERE idCar = ?`;
-    console.log('idCar', idCar);
+    console.log("idCar", idCar);
     db.query(sql, idCar, (err, result) => {
         if (err) {
             data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
@@ -910,6 +911,107 @@ const updateCarLicense = async (req, res, next) => {
     }
 };
 
+// CAR MAINTENANCE
+const validateDataCreateMaintenance = async (req, res, next) => {
+    const { idCar, description, repairCost } = req.body;
+    let data = { ...Constants.ResultData };
+
+    // CHECK DATA NULL / EMPTY / INVALID DATA
+    if (helper.isNullOrEmpty(idCar) || helper.isNullOrEmpty(description)) {
+        data.status = Constants.ApiCode.BAD_REQUEST;
+        data.message = Strings.Common.NOT_ENOUGH_DATA;
+        res.status(200).send(data);
+    } else if (
+        !helper.isValidStringLength(
+            description,
+            Constants.Common.MAX_LENGTH_MAINTENANCE_DESCRIPTION
+        )
+    ) {
+        data.status = Constants.ApiCode.BAD_REQUEST;
+        data.message = Strings.Common.SUPPORT_LENGTH_MAINTENANCE_DESCRIPTION;
+        res.status(200).send(data);
+    } else if (repairCost) {
+        let isNumber = parseInt(repairCost);
+        if (!isNumber) {
+            data.status = Constants.ApiCode.BAD_REQUEST;
+            data.message = Strings.Common.INVALID_DATA;
+            res.status(200).send(data);
+        }else{
+            next()
+        }
+    } else {
+        next();
+    }
+};
+
+const createCarMaintenance = async (req, res) => {
+    const { idCar, description, repairCost } = req.body;
+    let data = { ...Constants.ResultData };
+    if (req.userToken) {
+        if (req.urlImageFirebase) {
+            const idUser = req.userToken.idUser;
+            const urlImageFirebase = req.urlImageFirebase;
+            const currentDate = helper.formatTimeStamp(new Date().getTime());
+            // INSERT CAR
+            let sql = `INSERT INTO car_maintenance(description, image, createdAt, idCar, idUserUpdate) 
+            VALUES (?,?,?,?,?)`;
+            let dataCreate = [description, urlImageFirebase, currentDate, idCar, idUser]
+            if(repairCost){
+                sql = `INSERT INTO car_maintenance(description, repairCost, image, createdAt, idCar, idUserUpdate) 
+                VALUES (?,?,?,?,?,?)`;
+                dataCreate = [description, repairCost, urlImageFirebase, currentDate, idCar, idUser]
+            }
+            db.beginTransaction(function (err) {
+                if (err) {
+                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                    data.message = Strings.Common.ERROR;
+                    res.status(200).send(data);
+                }
+                db.query(sql, dataCreate, function (error, results, fields) {
+                    if (error) {
+                        return db.rollback(function () {
+                            data.status =
+                                Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                            data.message = Strings.Common.ERROR;
+                            res.status(200).send(data);
+                        });
+                    } else {
+                        if (results.affectedRows > 0) {
+                            db.commit(function (err) {
+                                if (err) {
+                                    return db.rollback(function () {
+                                        data.status =
+                                            Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                                        data.message = Strings.Common.ERROR;
+                                        res.status(200).send(data);
+                                    });
+                                } else {
+                                    data.status = Constants.ApiCode.OK;
+                                    data.message = Strings.Common.SUCCESS;
+                                    res.status(200).send(data);
+                                }
+                            });
+                        } else {
+                            data.status =
+                                Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                            data.message = Strings.Common.ERROR;
+                            res.status(200).send(data);
+                        }
+                    }
+                });
+            });
+        } else {
+            data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+            data.message = Strings.Common.ERROR_SERVER;
+            res.status(200).send(data);
+        }
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
+
 module.exports = {
     getCarListForAdmin,
     getCarToUpdate,
@@ -922,4 +1024,6 @@ module.exports = {
     updateCar,
     getImageCar,
     updateCarLicense,
+    validateDataCreateMaintenance,
+    createCarMaintenance,
 };

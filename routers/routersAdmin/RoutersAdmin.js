@@ -103,6 +103,15 @@ router.post(
     imageAdminControllers.deleteImageFromFirebase
 );
 
+router.post(
+    "/createCarMaintenance",
+    authenticationControllers.authenticationAdmin,
+    imageAdminControllers.validateImageCreateMaintenance,
+    carAdminControllers.validateDataCreateMaintenance,
+    imageAdminControllers.uploadImageMaintenanceToFirebase,
+    carAdminControllers.createCarMaintenance,
+);
+
 // TRIP
 router.post(
     "/getCarStatusListOfTrips",
