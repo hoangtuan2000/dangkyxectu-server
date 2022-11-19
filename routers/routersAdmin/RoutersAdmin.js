@@ -112,6 +112,12 @@ router.post(
     carAdminControllers.createCarMaintenance,
 );
 
+router.post(
+    "/getCarMaintenance",
+    authenticationControllers.authenticationAdmin,
+    carAdminControllers.getCarMaintenance,
+);
+
 // TRIP
 router.post(
     "/getCarStatusListOfTrips",

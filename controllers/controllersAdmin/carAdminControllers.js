@@ -912,6 +912,178 @@ const updateCarLicense = async (req, res, next) => {
 };
 
 // CAR MAINTENANCE
+const getCarMaintenance = async (req, res) => {
+    let {
+        page,
+        limitEntry,
+        carStatus,
+        carType,
+        carBrand,
+        licensePlates,
+        carCode,
+        getAllData,
+    } = req.body;
+    page = parseInt(page) || Constants.Common.PAGE;
+    limitEntry = parseInt(limitEntry) || Constants.Common.LIMIT_ENTRY;
+    let data = { ...Constants.ResultData };
+    let dataList = { ...Constants.ResultDataList };
+
+    if (req.userToken) {
+        if (
+            (carStatus && !helper.isArray(carStatus)) ||
+            (carType && !helper.isArray(carType)) ||
+            (carBrand && !helper.isArray(carBrand))
+        ) {
+            data.status = Constants.ApiCode.BAD_REQUEST;
+            data.message = Strings.Common.INVALID_DATA;
+            res.status(200).send(data);
+        } else {
+            let sqlExecuteQuery = `SELECT COUNT(cm.idCar) as sizeQuerySnapshot 
+                        FROM car_maintenance as cm
+                        LEFT JOIN car as ca ON ca.idCar = cm.idCar
+                        LEFT JOIN car_brand as cb ON cb.idCarBrand = ca.idCarBrand
+                        LEFT JOIN car_type as ct ON ct.idCarType = ca.idCarType
+                        LEFT JOIN car_status as cs ON cs.idCarStatus = ca.idCarStatus
+                        WHERE 1 = 1 `;
+            // CHECK CONDITION SQL
+            let conditionSql = "";
+            if (carType && carType.length > 0) {
+                let sqlTemp = "";
+                for (let i = 0; i < carType.length; i++) {
+                    if (!helper.isNullOrEmpty(carType[i])) {
+                        if (i == 0) {
+                            if (carType.length > 1) {
+                                sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' `;
+                            } else {
+                                sqlTemp += ` AND ( ct.idCarType = '${carType[i]}' ) `;
+                            }
+                        } else if (i == carType.length - 1) {
+                            sqlTemp += ` OR ct.idCarType = '${carType[i]}' ) `;
+                        } else {
+                            sqlTemp += ` OR ct.idCarType = '${carType[i]}' `;
+                        }
+                    }
+                }
+                conditionSql += sqlTemp;
+            }
+            if (carStatus && carStatus.length > 0) {
+                let sqlTemp = "";
+                for (let i = 0; i < carStatus.length; i++) {
+                    if (!helper.isNullOrEmpty(carStatus[i])) {
+                        if (i == 0) {
+                            if (carStatus.length > 1) {
+                                sqlTemp += ` AND ( cs.idCarStatus = '${carStatus[i]}' `;
+                            } else {
+                                sqlTemp += ` AND ( cs.idCarStatus = '${carStatus[i]}' ) `;
+                            }
+                        } else if (i == carStatus.length - 1) {
+                            sqlTemp += ` OR cs.idCarStatus = '${carStatus[i]}' ) `;
+                        } else {
+                            sqlTemp += ` OR cs.idCarStatus = '${carStatus[i]}' `;
+                        }
+                    }
+                }
+                conditionSql += sqlTemp;
+            }
+            if (carBrand && carBrand.length > 0) {
+                let sqlTemp = "";
+                for (let i = 0; i < carBrand.length; i++) {
+                    if (!helper.isNullOrEmpty(carBrand[i])) {
+                        if (i == 0) {
+                            if (carBrand.length > 1) {
+                                sqlTemp += ` AND ( cb.idCarBrand = '${carBrand[i]}' `;
+                            } else {
+                                sqlTemp += ` AND ( cb.idCarBrand = '${carBrand[i]}' ) `;
+                            }
+                        } else if (i == carBrand.length - 1) {
+                            sqlTemp += ` OR cb.idCarBrand = '${carBrand[i]}' ) `;
+                        } else {
+                            sqlTemp += ` OR cb.idCarBrand = '${carBrand[i]}' `;
+                        }
+                    }
+                }
+                conditionSql += sqlTemp;
+            }
+            if (!helper.isNullOrEmpty(carCode)) {
+                conditionSql += ` AND (ca.idCar = '${carCode}') `;
+            }
+            if (!helper.isNullOrEmpty(licensePlates)) {
+                conditionSql += ` AND (ca.licensePlates LIKE '%${licensePlates}%') `;
+            }
+
+            // EXECUTE SQL
+            const resultExecuteQuery = await executeQuery(
+                db,
+                `${sqlExecuteQuery} ${conditionSql}`
+            );
+
+            if (!resultExecuteQuery) {
+                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                data.message = Strings.Common.ERROR_GET_DATA;
+                res.status(200).send(data);
+            } else {
+                let sqlTemp = `SELECT 
+                                ca.idCar, ca.licensePlates, ca.image,
+                                cb.idCarBrand, cb.name as nameCarBrand,
+                                ct.idCarType, ct.name as nameCarType, ct.seatNumber,
+                                cs.idCarStatus, cs.name as nameCarStatus,
+                                cm.description, cm.repairCost
+                            FROM car_maintenance as cm
+                            LEFT JOIN car as ca ON ca.idCar = cm.idCar
+                            LEFT JOIN car_brand as cb ON cb.idCarBrand = ca.idCarBrand
+                            LEFT JOIN car_type as ct ON ct.idCarType = ca.idCarType
+                            LEFT JOIN car_status as cs ON cs.idCarStatus = ca.idCarStatus
+                            WHERE 1 = 1 ${conditionSql} `;
+
+                let limitData = `  LIMIT ${
+                    limitEntry * page - limitEntry
+                }, ${limitEntry}`;
+
+                let sql = "";
+                // CHECK GET ALL DATA => NOT LIMIT DATA
+                if (
+                    getAllData &&
+                    helper.convertStringBooleanToBoolean(getAllData)
+                ) {
+                    sql += sqlTemp;
+                } else {
+                    sql += sqlTemp + limitData;
+                }
+                db.query(sql, (err, result) => {
+                    if (err) {
+                        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                        data.message = Strings.Common.ERROR;
+                        res.status(200).send(data);
+                    } else {
+                        dataList.status = Constants.ApiCode.OK;
+                        dataList.message = Strings.Common.SUCCESS;
+
+                        if (
+                            getAllData &&
+                            helper.convertStringBooleanToBoolean(getAllData)
+                        ) {
+                            dataList.limitEntry =
+                                resultExecuteQuery[0].sizeQuerySnapshot;
+                        } else {
+                            dataList.limitEntry = limitEntry;
+                        }
+
+                        dataList.page = page;
+                        dataList.sizeQuerySnapshot =
+                            resultExecuteQuery[0].sizeQuerySnapshot;
+                        dataList.data = [...result];
+                        res.status(200).send(dataList);
+                    }
+                });
+            }
+        }
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
+
 const validateDataCreateMaintenance = async (req, res, next) => {
     const { idCar, description, repairCost } = req.body;
     let data = { ...Constants.ResultData };
@@ -936,8 +1108,8 @@ const validateDataCreateMaintenance = async (req, res, next) => {
             data.status = Constants.ApiCode.BAD_REQUEST;
             data.message = Strings.Common.INVALID_DATA;
             res.status(200).send(data);
-        }else{
-            next()
+        } else {
+            next();
         }
     } else {
         next();
@@ -955,11 +1127,24 @@ const createCarMaintenance = async (req, res) => {
             // INSERT CAR
             let sql = `INSERT INTO car_maintenance(description, image, createdAt, idCar, idUserUpdate) 
             VALUES (?,?,?,?,?)`;
-            let dataCreate = [description, urlImageFirebase, currentDate, idCar, idUser]
-            if(repairCost){
+            let dataCreate = [
+                description,
+                urlImageFirebase,
+                currentDate,
+                idCar,
+                idUser,
+            ];
+            if (repairCost) {
                 sql = `INSERT INTO car_maintenance(description, repairCost, image, createdAt, idCar, idUserUpdate) 
                 VALUES (?,?,?,?,?,?)`;
-                dataCreate = [description, repairCost, urlImageFirebase, currentDate, idCar, idUser]
+                dataCreate = [
+                    description,
+                    repairCost,
+                    urlImageFirebase,
+                    currentDate,
+                    idCar,
+                    idUser,
+                ];
             }
             db.beginTransaction(function (err) {
                 if (err) {
@@ -1026,4 +1211,5 @@ module.exports = {
     updateCarLicense,
     validateDataCreateMaintenance,
     createCarMaintenance,
+    getCarMaintenance
 };
