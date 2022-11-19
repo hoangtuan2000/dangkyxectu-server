@@ -113,6 +113,23 @@ router.post(
 );
 
 router.post(
+    "/updateCarMaintenance",
+    authenticationControllers.authenticationAdmin,
+    imageAdminControllers.validateImageUpdateMaintenance,
+    carAdminControllers.validateDataUpdateMaintenance,
+    carAdminControllers.getImageCarMaintenance,
+    imageAdminControllers.uploadImageMaintenanceToFirebase,
+    carAdminControllers.updateCarMaintenance,
+    imageAdminControllers.deleteImageFromFirebase
+);
+
+router.post(
+    "/getCarMaintenanceList",
+    authenticationControllers.authenticationAdmin,
+    carAdminControllers.getCarMaintenanceList,
+);
+
+router.post(
     "/getCarMaintenance",
     authenticationControllers.authenticationAdmin,
     carAdminControllers.getCarMaintenance,

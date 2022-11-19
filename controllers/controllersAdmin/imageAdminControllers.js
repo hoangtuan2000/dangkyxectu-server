@@ -290,6 +290,61 @@ const uploadImageMaintenanceToFirebase = async (req, res, next) => {
     }
 };
 
+const validateImageUpdateMaintenance = async (req, res, next) => {
+    let data = { ...Constants.ResultData };
+    uploadImage(req, res, function (err) {
+        if (err instanceof multer.MulterError) {
+            // A Multer error occurred when uploading.
+            switch (err.code) {
+                case "LIMIT_PART_COUNT":
+                    data.status = Constants.ApiCode.BAD_REQUEST;
+                    data.message = Strings.Common.LIMIT_PART_COUNT;
+                    break;
+                case "LIMIT_FILE_SIZE":
+                    data.status = Constants.ApiCode.BAD_REQUEST;
+                    data.message = Strings.Common.LIMIT_FILE_SIZE;
+                    break;
+                case "LIMIT_FILE_COUNT":
+                    data.status = Constants.ApiCode.BAD_REQUEST;
+                    data.message = Strings.Common.LIMIT_FILE_COUNT;
+                    break;
+                case "LIMIT_FIELD_KEY":
+                    data.status = Constants.ApiCode.BAD_REQUEST;
+                    data.message = Strings.Common.LIMIT_FIELD_KEY;
+                    break;
+                case "LIMIT_FIELD_VALUE":
+                    data.status = Constants.ApiCode.BAD_REQUEST;
+                    data.message = Strings.Common.LIMIT_FIELD_VALUE;
+                    break;
+                case "LIMIT_FIELD_COUNT":
+                    data.status = Constants.ApiCode.BAD_REQUEST;
+                    data.message = Strings.Common.LIMIT_FIELD_COUNT;
+                    break;
+                case "LIMIT_UNEXPECTED_FILE":
+                    data.status = Constants.ApiCode.BAD_REQUEST;
+                    data.message = Strings.Common.LIMIT_UNEXPECTED_FILE;
+                    break;
+                case "MISSING_FIELD_NAME":
+                    data.status = Constants.ApiCode.BAD_REQUEST;
+                    data.message = Strings.Common.MISSING_FIELD_NAME;
+                    break;
+                default:
+                    data.status = Constants.ApiCode.BAD_REQUEST;
+                    data.message = Strings.Common.INVALID_DATA;
+                    break;
+            }
+            res.status(200).send(data);
+        } else if (err) {
+            data.status = Constants.ApiCode.BAD_REQUEST;
+            data.message = Strings.Common.ONLY_SUPPORT_IMAGE;
+            res.status(200).send(data);
+        } else {
+            req.changeImage = true;
+            next();
+        }
+    });
+};
+
 module.exports = {
     validateUploadImageWhenCreateCar,
     uploadImageToFirebase,
@@ -297,4 +352,5 @@ module.exports = {
     validateUploadImageWhenUpdateCar,
     validateImageCreateMaintenance,
     uploadImageMaintenanceToFirebase,
+    validateImageUpdateMaintenance
 };
