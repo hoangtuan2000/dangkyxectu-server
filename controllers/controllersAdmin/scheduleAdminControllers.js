@@ -639,7 +639,7 @@ const updateSchedulePending = async (req, res, next) => {
                 idSchedule,
             ];
             sql = `UPDATE schedule SET updatedAt=?, idAdmin=?, idUserLastUpdated=?, idScheduleStatus=?, reasonCancel=?
-                WHERE idSchedule =? AND idScheduleStatus = ${Constants.ScheduleStatusCode.PENDING}  AND DATE(FROM_UNIXTIME(startDate)) > CURRENT_DATE()`;
+                WHERE idSchedule =? AND idScheduleStatus = ${Constants.ScheduleStatusCode.PENDING}  AND DATE(FROM_UNIXTIME(startDate)) >= CURRENT_DATE()`;
         }
         // APPROVED SCHEDULE
         else if (
@@ -657,7 +657,7 @@ const updateSchedulePending = async (req, res, next) => {
                 idSchedule,
             ];
             sql = `UPDATE schedule SET updatedAt=?, idAdmin=?, idDriver=?, idUserLastUpdated=?, idScheduleStatus=? 
-            WHERE idSchedule =? AND idScheduleStatus = ${Constants.ScheduleStatusCode.PENDING}  AND DATE(FROM_UNIXTIME(startDate)) > CURRENT_DATE()`;
+            WHERE idSchedule =? AND idScheduleStatus = ${Constants.ScheduleStatusCode.PENDING}  AND DATE(FROM_UNIXTIME(startDate)) >= CURRENT_DATE()`;
         }
 
         if (helper.isNullOrEmpty(sql) || helper.isArrayEmpty(dataSql)) {

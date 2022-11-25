@@ -16,7 +16,7 @@ const getAnalysisTotalCommon = async (req, res) => {
                 FROM schedule WHERE idScheduleStatus = ${Constants.ScheduleStatusCode.COMPLETE};`;
         let sqlTotalSchedulePending = `SELECT COUNT(idSchedule) as totalSchedulePending 
                 FROM schedule WHERE idScheduleStatus = ${Constants.ScheduleStatusCode.PENDING} 
-                AND DATE(FROM_UNIXTIME(startDate)) > CURRENT_DATE();`;
+                AND DATE(FROM_UNIXTIME(startDate)) >= CURRENT_DATE();`;
         let sqlTotalLicenseCarExpires = `SELECT COUNT(idCar) as totalLicenseCarExpires
                 FROM car_license_detail 
                 WHERE DATE(FROM_UNIXTIME(carLicenseExpirationDate)) <= CURRENT_DATE() AND noExpireDate = 0;`;
