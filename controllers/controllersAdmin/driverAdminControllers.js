@@ -458,41 +458,6 @@ const createDriver = async (req, res) => {
 const addDriverLdap = async (fullName, code, password) => {
     const DN_LDAP_ADMIN = await process.env.DN_LDAP_ADMIN;
     const SECRET_LDAP_ADMIN = await process.env.SECRET_LDAP_ADMIN;
-    // const result = await ldapClient.bind(
-    //     DN_LDAP_ADMIN,
-    //     SECRET_LDAP_ADMIN,
-    //     function (err) {
-    //         // error authentication ldap server
-    //         if (err) {
-    //             console.log("err addDriverLdap 1", err);
-    //             return false;
-    //         }
-    //         // get data user => token
-    //         else {
-    //             var entry = {
-    //                 sn: `${fullName}`,
-    //                 objectclass: `${process.env.OBJECT_CLASS_LDAP}`,
-    //                 userPassword: `${password}`,
-    //             };
-    //             ldapClient.add(
-    //                 `cn=${code},ou=users,ou=system`,
-    //                 entry,
-    //                 function (err) {
-    //                     if (err) {
-    //                         console.log("err addDriverLdap 2" + err);
-    //                         return false;
-    //                     } else {
-    //                         console.log("added user");
-    //                         return true;
-    //                     }
-    //                 }
-    //             );
-    //         }
-    //     }
-    // );
-
-    // console.log("result", result);
-    // return result;
 
     return new Promise((resolve, reject) => {
         ldapClient.bind(DN_LDAP_ADMIN, SECRET_LDAP_ADMIN, function (err) {

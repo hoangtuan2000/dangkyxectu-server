@@ -5,6 +5,7 @@ const analysisAdminControllers = require("../../controllers/controllersAdmin/ana
 const scheduleControllers = require("../../controllers/controllersGlobal/scheduleControllers");
 const carAdminControllers = require("../../controllers/controllersAdmin/carAdminControllers");
 const driverAdminControllers = require("../../controllers/controllersAdmin/driverAdminControllers");
+const userAdminControllers = require("../../controllers/controllersAdmin/userAdminControllers");
 const imageAdminControllers = require("../../controllers/controllersAdmin/imageAdminControllers");
 const router = require("express").Router();
 
@@ -195,6 +196,13 @@ router.post(
     userControllers.checkCodeUserUpdateExist,
     userControllers.checkEmailUserUpdateExist,
     driverAdminControllers.updateDriver
+);
+
+// USER
+router.post(
+    "/getUserList",
+    authenticationControllers.authenticationAdminSystem,
+    userAdminControllers.getUserList
 );
 
 // ANALYSIS

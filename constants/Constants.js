@@ -45,6 +45,7 @@ const Constants = {
         ADMIN: 1,
         DRIVER: 2,
         USER: 3,
+        ADMIN_SYSTEM: 4
     },
 
     ScheduleStatus: {
