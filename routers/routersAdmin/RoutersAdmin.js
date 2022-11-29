@@ -214,6 +214,28 @@ router.post(
     userAdminControllers.createUser
 );
 
+router.post(
+    "/getUserToUpdate",
+    authenticationControllers.authenticationAdminSystem,
+    userAdminControllers.getUserToUpdate
+);
+
+
+router.post(
+    "/updateUser",
+    authenticationControllers.authenticationAdminSystem,
+    userControllers.validateDataUpdateUser,
+    userControllers.checkCodeUserUpdateExist,
+    userControllers.checkEmailUserUpdateExist,
+    userAdminControllers.updateUser
+);
+
+router.post(
+    "/createMultipleUser",
+    authenticationControllers.authenticationAdminSystem,
+    userAdminControllers.createMultipleUser
+);
+
 // ANALYSIS
 router.post(
     "/getAnalysisTotalCommon",

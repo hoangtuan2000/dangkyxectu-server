@@ -1,4 +1,3 @@
-const { async } = require("@firebase/util");
 const {
     executeQuery,
     addUserLdap,
@@ -176,117 +175,53 @@ const getUserList = async (req, res) => {
     }
 };
 
-// const getInfoDriver = async (req, res) => {
-//     let { idDriver } = req.body;
+const getUserToUpdate = async (req, res) => {
+    let { idUser } = req.body;
 
-//     let data = { ...Constants.ResultData };
+    let data = { ...Constants.ResultData };
 
-//     if (req.userToken) {
-//         const sql = `SELECT
-//             avgRv.averageStar,
-//             dr.fullName, dr.code, dr.email, dr.phone,
-//             dr.driverLicenseExpirationDate, dr.address,
-//             dr.createdAt, dr.updatedAt,
-//             userUpdate.idUser as idUserUpdate, userUpdate.fullName as fullNameUserUpdate,
-//             userUpdate.code as codeUserUpdate,
-//             uss.idUserStatus, uss.name as nameUserStatus,
-//             dl.idDriverLicense, dl.name as nameDriverLicense,
-//             wa.idWard, wa.name as nameWard, wa.type as typeWard, wa.idDistrict as idDistrictWard,
-//             ds.idDistrict, ds.name as nameDistrict, ds.type as typeDistrict, ds.idProvince as idProvinceDistrict,
-//             pv.idProvince, pv.name as nameProvince, pv.type as typeProvince
-//             FROM user as dr
-//             LEFT JOIN user as userUpdate ON userUpdate.idUser = dr.idUserUpdate
-//             LEFT JOIN user_status as uss ON uss.idUserStatus = dr.idUserStatus
-//             LEFT JOIN driver_license as dl ON dl.idDriverLicense = dr.idDriverLicense
-//             LEFT JOIN ward as wa ON wa.idWard = dr.idWard
-//             LEFT JOIN district as ds ON ds.idDistrict = wa.idDistrict
-//             LEFT JOIN province as pv ON pv.idProvince = ds.idProvince
-//             LEFT JOIN
-//                 (SELECT sc.*, ROUND(AVG(rv.starNumber)) as averageStar
-//                 FROM review as rv
-//                 RIGHT JOIN
-//                     (SELECT dr.idUser as idDriver, sc.idSchedule
-//                     FROM user as dr
-//                     LEFT JOIN schedule as sc ON sc.idDriver = dr.idUser
-//                     WHERE idRole = ${Constants.RoleCode.DRIVER} AND dr.idUser = ${idDriver}
-//                     AND sc.idScheduleStatus = ${Constants.ScheduleStatusCode.COMPLETE}) as sc
-//                 ON sc.idSchedule = rv.idSchedule
-//                 GROUP BY sc.idDriver) as avgRv
-//                 ON avgRv.idDriver = dr.idUser
-//             WHERE dr.idUser = ${idDriver} AND dr.idRole = ${Constants.RoleCode.DRIVER}`;
-//         db.query(sql, idDriver, (err, result) => {
-//             if (err) {
-//                 data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-//                 data.message = Strings.Common.ERROR;
-//                 res.status(200).send(data);
-//             } else {
-//                 if (result.length > 0) {
-//                     data.status = Constants.ApiCode.OK;
-//                     data.message = Strings.Common.SUCCESS;
-//                     data.data = [...result];
-//                     res.status(200).send(data);
-//                 } else {
-//                     data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-//                     data.message = Strings.Common.ERROR_GET_DATA;
-//                     res.status(200).send(data);
-//                 }
-//             }
-//         });
-//     } else {
-//         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-//         data.message = Strings.Common.USER_NOT_EXIST;
-//         res.status(200).send(data);
-//     }
-// };
+    if (req.userToken) {
+        const sql = `SELECT
+                us.fullName, us.code, us.email, us.phone,
+                us.address,
+                fa.idFaculty, fa.name as nameFaculty,
+                uss.idUserStatus, uss.name as nameUserStatus,
+                wa.idWard, wa.name as nameWard, wa.type as typeWard, wa.idDistrict as idDistrictWard,
+                ds.idDistrict, ds.name as nameDistrict, ds.type as typeDistrict, ds.idProvince as idProvinceDistrict,
+                pv.idProvince, pv.name as nameProvince, pv.type as typeProvince
+            FROM user as us
+            LEFT JOIN user_status as uss ON uss.idUserStatus = us.idUserStatus
+            LEFT JOIN faculty as fa ON fa.idFaculty = us.idFaculty
+            LEFT JOIN ward as wa ON wa.idWard = us.idWard
+            LEFT JOIN district as ds ON ds.idDistrict = wa.idDistrict
+            LEFT JOIN province as pv ON pv.idProvince = ds.idProvince
+            WHERE us.idUser = ?`;
+        db.query(sql, idUser, (err, result) => {
+            if (err) {
+                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                data.message = Strings.Common.ERROR;
+                res.status(200).send(data);
+            } else {
+                if (result.length > 0) {
+                    data.status = Constants.ApiCode.OK;
+                    data.message = Strings.Common.SUCCESS;
+                    data.data = [...result];
+                    res.status(200).send(data);
+                } else {
+                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                    data.message = Strings.Common.ERROR_GET_DATA;
+                    res.status(200).send(data);
+                }
+            }
+        });
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
 
-// const getDriverToUpdate = async (req, res) => {
-//     let { idDriver } = req.body;
-
-//     let data = { ...Constants.ResultData };
-
-//     if (req.userToken) {
-//         const sql = `SELECT
-//                         dr.fullName, dr.code, dr.email, dr.phone,
-//                         dr.driverLicenseExpirationDate, dr.address,
-//                         uss.idUserStatus, uss.name as nameUserStatus,
-//                         dl.idDriverLicense, dl.name as nameDriverLicense,
-//                         wa.idWard, wa.name as nameWard, wa.type as typeWard, wa.idDistrict as idDistrictWard,
-//                         ds.idDistrict, ds.name as nameDistrict, ds.type as typeDistrict, ds.idProvince as idProvinceDistrict,
-//                         pv.idProvince, pv.name as nameProvince, pv.type as typeProvince
-//                     FROM user as dr
-//                     LEFT JOIN user_status as uss ON uss.idUserStatus = dr.idUserStatus
-//                     LEFT JOIN driver_license as dl ON dl.idDriverLicense = dr.idDriverLicense
-//                     LEFT JOIN ward as wa ON wa.idWard = dr.idWard
-//                     LEFT JOIN district as ds ON ds.idDistrict = wa.idDistrict
-//                     LEFT JOIN province as pv ON pv.idProvince = ds.idProvince
-//                     WHERE dr.idUser = ?`;
-//         db.query(sql, idDriver, (err, result) => {
-//             if (err) {
-//                 data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-//                 data.message = Strings.Common.ERROR;
-//                 res.status(200).send(data);
-//             } else {
-//                 if (result.length > 0) {
-//                     data.status = Constants.ApiCode.OK;
-//                     data.message = Strings.Common.SUCCESS;
-//                     data.data = [...result];
-//                     res.status(200).send(data);
-//                 } else {
-//                     data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-//                     data.message = Strings.Common.ERROR_GET_DATA;
-//                     res.status(200).send(data);
-//                 }
-//             }
-//         });
-//     } else {
-//         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-//         data.message = Strings.Common.USER_NOT_EXIST;
-//         res.status(200).send(data);
-//     }
-// };
-
-// CREATE DRIVER
-
+// CREATE USER
 const createUser = async (req, res) => {
     let { idFaculty, fullName, code, email, pass, phone, address, idWard } =
         req.body;
@@ -384,412 +319,375 @@ const createUser = async (req, res) => {
     }
 };
 
-// //CREATE MULTIPLE DRIVER FROM FILE EXCEL
-// const validateDataCreateDriverFunction = async (
-//     fullName,
-//     code,
-//     email,
-//     pass,
-//     phone,
-//     address,
-//     idWard,
-//     idDriverLicense,
-//     driverLicenseExpirationDate
-// ) => {
-//     let errorData = false;
-//     if (
-//         helper.isNullOrEmpty(fullName) ||
-//         helper.isNullOrEmpty(code) ||
-//         helper.isNullOrEmpty(email) ||
-//         helper.isNullOrEmpty(pass) ||
-//         helper.isNullOrEmpty(phone) ||
-//         helper.isNullOrEmpty(address) ||
-//         helper.isNullOrEmpty(idWard) ||
-//         helper.isNullOrEmpty(idDriverLicense) ||
-//         helper.isNullOrEmpty(driverLicenseExpirationDate)
-//     ) {
-//         return false;
-//     } else {
-//         // CHECK FULL NAME
-//         if (
-//             !helper.isValidStringBetweenMinMaxLength(
-//                 fullName,
-//                 Constants.Common.MIN_LENGTH_FULL_NAME,
-//                 Constants.Common.MAX_LENGTH_FULL_NAME
-//             )
-//         ) {
-//             errorData = true;
-//         }
+// //CREATE MULTIPLE USER FROM FILE EXCEL
+const validateDataCreateUserFunction = async (
+    fullName,
+    code,
+    email,
+    pass,
+    phone,
+    address,
+    idWard,
+    idFaculty,
+) => {
+    let errorData = false;
+    if (
+        helper.isNullOrEmpty(fullName) ||
+        helper.isNullOrEmpty(code) ||
+        helper.isNullOrEmpty(email) ||
+        helper.isNullOrEmpty(pass) ||
+        helper.isNullOrEmpty(phone) ||
+        helper.isNullOrEmpty(address) ||
+        helper.isNullOrEmpty(idWard) ||
+        helper.isNullOrEmpty(idFaculty)
+    ) {
+        return false;
+    } else {
+        // CHECK FULL NAME
+        if (
+            !helper.isValidStringBetweenMinMaxLength(
+                fullName,
+                Constants.Common.MIN_LENGTH_FULL_NAME,
+                Constants.Common.MAX_LENGTH_FULL_NAME
+            )
+        ) {
+            errorData = true;
+        }
 
-//         // CHECK CODE
-//         if (
-//             !helper.isValidStringBetweenMinMaxLength(
-//                 code,
-//                 Constants.Common.MIN_LENGTH_CODE,
-//                 Constants.Common.MAX_LENGTH_CODE
-//             )
-//         ) {
-//             errorData = true;
-//         }
+        // CHECK CODE
+        if (
+            !helper.isValidStringBetweenMinMaxLength(
+                code,
+                Constants.Common.MIN_LENGTH_CODE,
+                Constants.Common.MAX_LENGTH_CODE
+            )
+        ) {
+            errorData = true;
+        }
 
-//         // CHECK EMAIL
-//         if (!helper.isValidEmail(email)) {
-//             errorData = true;
-//         }
+        // CHECK EMAIL
+        if (!helper.isValidEmail(email)) {
+            errorData = true;
+        }
 
-//         // CHECK PASSWORD
-//         if (
-//             !helper.isValidStringBetweenMinMaxLength(
-//                 pass,
-//                 Constants.Common.MIN_LENGTH_PASSWORD,
-//                 Constants.Common.MAX_LENGTH_PASSWORD
-//             )
-//         ) {
-//             errorData = true;
-//         }
+        // CHECK PASSWORD
+        if (
+            !helper.isValidStringBetweenMinMaxLength(
+                pass,
+                Constants.Common.MIN_LENGTH_PASSWORD,
+                Constants.Common.MAX_LENGTH_PASSWORD
+            )
+        ) {
+            errorData = true;
+        }
 
-//         // CHECK PHONE
-//         if (!helper.isValidPhoneNumber(phone)) {
-//             errorData = true;
-//         }
+        // CHECK PHONE
+        if (!helper.isValidPhoneNumber(phone)) {
+            errorData = true;
+        }
 
-//         // CHECK DRIVER LICENSE EXPIRATION DATE
-//         if (!helper.isTimeStamp(driverLicenseExpirationDate)) {
-//             errorData = true;
-//         }
+        // CHECK ERROR
+        if (errorData) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+};
 
-//         // CHECK ERROR
-//         if (errorData) {
-//             return false;
-//         } else {
-//             return true;
-//         }
-//     }
-// };
+const createMultipleUser = async (req, res) => {
+    let { fileData } = req.body;
+    let data = { ...Constants.ResultData };
 
-// const createMultipleDriver = async (req, res) => {
-//     let { fileData } = req.body;
-//     let data = { ...Constants.ResultData };
+    if (req.userToken) {
+        if (helper.isArray(fileData) && fileData.length > 1) {
+            let currentDate = helper.formatTimeStamp(new Date().getTime());
+            const idUser = req.userToken.idUser;
+            const sql = `INSERT INTO user(fullName, code, email, phone, address, createdAt, idFaculty, idRole, idWard, idUserStatus, idUserUpdate) 
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?)`;
 
-//     if (req.userToken) {
-//         if (helper.isArray(fileData) && fileData.length > 1) {
-//             let currentDate = helper.formatTimeStamp(new Date().getTime());
-//             const idUser = req.userToken.idUser;
-//             const sql = `INSERT INTO user(fullName, code, email, phone, address, driverLicenseExpirationDate,
-//                 createdAt,  idDriverLicense, idRole, idWard, idUserStatus, idUserUpdate) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`;
+            let errorCreate = false;
+            let indexCreateError = null;
 
-//             let errorCreate = false;
-//             let indexCreateError = null;
+            for (let i = 0; i < fileData.length; i++) {
+                // CALL FUNCTION CHECK DATA
+                let resultCheckData = await validateDataCreateUserFunction(
+                    fileData[i].fullName,
+                    fileData[i].code,
+                    fileData[i].email,
+                    fileData[i].pass,
+                    fileData[i].phone,
+                    fileData[i].address,
+                    fileData[i].idWard,
+                    fileData[i].idFaculty,
+                );
+                if (resultCheckData) {
+                    // FORMAT DATA
+                    let arr = await [
+                        helper.removeVietnameseAccents(fileData[i].fullName),
+                        fileData[i].code,
+                        fileData[i].email,
+                        fileData[i].phone,
+                        fileData[i].address,
+                        currentDate,
+                        fileData[i].idFaculty,
+                        Constants.RoleCode.USER,
+                        fileData[i].idWard,
+                        Constants.UserStatusCode.WORKING,
+                        idUser,
+                    ];
+                    // INSERT DATABASE AND LDAP
+                    const resultInsert = await new Promise(
+                        (resolve, reject) => {
+                            db.beginTransaction(function (err) {
+                                if (err) {
+                                    return resolve(false);
+                                }
+                                db.query(
+                                    sql,
+                                    arr,
+                                    function (error, results, fields) {
+                                        if (error) {
+                                            db.rollback(function () {});
+                                            return resolve(false);
+                                        } else {
+                                            if (results.affectedRows > 0) {
+                                                db.commit(async function (err) {
+                                                    if (err) {
+                                                        db.rollback(
+                                                            function () {}
+                                                        );
+                                                        return resolve(false);
+                                                    } else {
+                                                        const resultAddUserLdap =
+                                                            await addUserLdap(
+                                                                helper.removeVietnameseAccents(
+                                                                    fileData[i]
+                                                                        .fullName
+                                                                ),
+                                                                fileData[i]
+                                                                    .code,
+                                                                fileData[i].pass
+                                                            );
+                                                       
+                                                        if (resultAddUserLdap) {
+                                                            return resolve(
+                                                                true
+                                                            );
+                                                        } else {
+                                                            await db.rollback(
+                                                                function () {}
+                                                            );
+                                                            return resolve(
+                                                                false
+                                                            );
+                                                        }
+                                                    }
+                                                });
+                                            } else {
+                                                return resolve(false);
+                                            }
+                                        }
+                                    }
+                                );
+                            });
+                        }
+                    );
+                    // CHECK ERROR INSERT
+                    if (!resultInsert) {
+                        errorCreate = true;
+                        indexCreateError = i + 1;
+                        break;
+                    }
+                } else {
+                    errorCreate = true;
+                    indexCreateError = i + 1;
+                    break;
+                }
+            }
 
-//             for (let i = 0; i < fileData.length; i++) {
-//                 // CALL FUNCTION CHECK DATA
-//                 let resultCheckData = await validateDataCreateDriverFunction(
-//                     fileData[i].fullName,
-//                     fileData[i].code,
-//                     fileData[i].email,
-//                     fileData[i].pass,
-//                     fileData[i].phone,
-//                     fileData[i].address,
-//                     fileData[i].idWard,
-//                     fileData[i].idDriverLicense,
-//                     fileData[i].driverLicenseExpirationDate
-//                 );
-//                 if (resultCheckData) {
-//                     // FORMAT DATA
-//                     let arr = await [
-//                         helper.removeVietnameseAccents(fileData[i].fullName),
-//                         fileData[i].code,
-//                         fileData[i].email,
-//                         fileData[i].phone,
-//                         fileData[i].address,
-//                         helper.formatTimeStamp(
-//                             fileData[i].driverLicenseExpirationDate
-//                         ),
-//                         currentDate,
-//                         fileData[i].idDriverLicense,
-//                         Constants.RoleCode.DRIVER,
-//                         fileData[i].idWard,
-//                         Constants.UserStatusCode.WORKING,
-//                         idUser,
-//                     ];
-//                     // INSERT DATABASE AND LDAP
-//                     const resultInsert = await new Promise(
-//                         (resolve, reject) => {
-//                             db.beginTransaction(function (err) {
-//                                 if (err) {
-//                                     return resolve(false);
-//                                 }
-//                                 db.query(
-//                                     sql,
-//                                     arr,
-//                                     function (error, results, fields) {
-//                                         if (error) {
-//                                             db.rollback(function () {});
-//                                             return resolve(false);
-//                                         } else {
-//                                             if (results.affectedRows > 0) {
-//                                                 db.commit(async function (err) {
-//                                                     if (err) {
-//                                                         db.rollback(
-//                                                             function () {}
-//                                                         );
-//                                                         return resolve(false);
-//                                                     } else {
-//                                                         const resultAddUserLdap =
-//                                                             await addDriverLdap(
-//                                                                 helper.removeVietnameseAccents(
-//                                                                     fileData[i]
-//                                                                         .fullName
-//                                                                 ),
-//                                                                 fileData[i]
-//                                                                     .code,
-//                                                                 fileData[i].pass
-//                                                             );
-//                                                         console.log(
-//                                                             "resultAddUserLdap",
-//                                                             resultAddUserLdap
-//                                                         );
-//                                                         if (resultAddUserLdap) {
-//                                                             return resolve(
-//                                                                 true
-//                                                             );
-//                                                         } else {
-//                                                             await db.rollback(
-//                                                                 function () {}
-//                                                             );
-//                                                             return resolve(
-//                                                                 false
-//                                                             );
-//                                                         }
-//                                                     }
-//                                                 });
-//                                             } else {
-//                                                 return resolve(false);
-//                                             }
-//                                         }
-//                                     }
-//                                 );
-//                             });
-//                         }
-//                     );
-//                     // CHECK ERROR INSERT
-//                     if (!resultInsert) {
-//                         errorCreate = true;
-//                         indexCreateError = i + 1;
-//                         break;
-//                     }
-//                 } else {
-//                     errorCreate = true;
-//                     indexCreateError = i + 1;
-//                     break;
-//                 }
-//             }
+            // CHECK ERROR CREATE SEND CLIENT
+            if (errorCreate) {
+                data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                data.message = `Lỗi Tại Dòng Số: ${indexCreateError}`;
+                res.status(200).send(data);
+            } else {
+                data.status = Constants.ApiCode.OK;
+                data.message = Strings.Common.SUCCESS;
+                res.status(200).send(data);
+            }
+        } else {
+            data.status = Constants.ApiCode.BAD_REQUEST;
+            data.message = Strings.Common.INVALID_DATA;
+            res.status(200).send(data);
+        }
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
 
-//             // CHECK ERROR CREATE SEND CLIENT
-//             if (errorCreate) {
-//                 data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-//                 data.message = `Lỗi Tại Dòng Số: ${indexCreateError}`;
-//                 res.status(200).send(data);
-//             } else {
-//                 data.status = Constants.ApiCode.OK;
-//                 data.message = Strings.Common.SUCCESS;
-//                 res.status(200).send(data);
-//             }
-//         } else {
-//             data.status = Constants.ApiCode.BAD_REQUEST;
-//             data.message = Strings.Common.INVALID_DATA;
-//             res.status(200).send(data);
-//         }
-//     } else {
-//         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-//         data.message = Strings.Common.USER_NOT_EXIST;
-//         res.status(200).send(data);
-//     }
-// };
+//UDPATE USER
+const updateUser = async (req, res) => {
+    let {
+        idUser,
+        idFaculty,
+        fullName,
+        code,
+        email,
+        pass,
+        phone,
+        address,
+        idWard,
+        idUserStatus,
+    } = req.body;
+    let data = { ...Constants.ResultData };
 
-// //UDPATE DRIVER
-// const updateDriver = async (req, res) => {
-//     let {
-//         idUser,
-//         idDriverLicense,
-//         fullName,
-//         code,
-//         email,
-//         pass,
-//         phone,
-//         driverLicenseExpirationDate,
-//         address,
-//         idWard,
-//         idUserStatus,
-//     } = req.body;
-//     let data = { ...Constants.ResultData };
+    if (req.userToken) {
+        if (idUser) {
+            const sqlGetCodeOld = `SELECT code as codeOld FROM user WHERE idUser = ?`;
+            const resExecuteQuery = await executeQuery(
+                db,
+                sqlGetCodeOld,
+                idUser
+            );
+            if (!resExecuteQuery) {
+                console.log("err !resExecuteQuery");
+                data.status = Constants.ApiCode.BAD_REQUEST;
+                data.message = Strings.Common.ERROR_GET_DATA;
+                res.status(200).send(data);
+            } else {
+                if (resExecuteQuery.length > 0) {
+                    const idCurrentUser = req.userToken.idUser;
+                    const currentDate = helper.formatTimeStamp(
+                        new Date().getTime()
+                    );
+                    let codeOld = resExecuteQuery[0].codeOld;
+                    // UPDATE DRIVER
+                    let sql = null;
+                    let sqlData = "";
+                    if (idFaculty) {
+                        sqlData += ` idFaculty = '${idFaculty}',`;
+                    }
+                    if (fullName) {
+                        fullName = helper.removeVietnameseAccents(fullName);
+                        sqlData += ` fullName = '${fullName}',`;
+                    }
+                    if (code) {
+                        sqlData += ` code = '${code}',`;
+                    }
+                    if (email) {
+                        sqlData += ` email = '${email}',`;
+                    }
+                    if (phone) {
+                        sqlData += ` phone = '${phone}',`;
+                    }
+                    if (address) {
+                        sqlData += ` address = '${address}',`;
+                    }
+                    if (idWard) {
+                        sqlData += ` idWard = '${idWard}',`;
+                    }
+                    if (idUserStatus) {
+                        sqlData += ` idUserStatus = ${idUserStatus},`;
+                    }
 
-//     if (req.userToken) {
-//         if (idUser) {
-//             if (
-//                 driverLicenseExpirationDate &&
-//                 !helper.isTimeStamp(driverLicenseExpirationDate)
-//             ) {
-//                 data.status = Constants.ApiCode.BAD_REQUEST;
-//                 data.message = Strings.Common.INVALID_DATA;
-//                 res.status(200).send(data);
-//             } else {
-//                 const sqlGetCodeOld = `SELECT code as codeOld FROM user WHERE idUser = ?`;
-//                 const resExecuteQuery = await executeQuery(
-//                     db,
-//                     sqlGetCodeOld,
-//                     idUser
-//                 );
-//                 if (!resExecuteQuery) {
-//                     console.log("err !resExecuteQuery");
-//                     data.status = Constants.ApiCode.BAD_REQUEST;
-//                     data.message = Strings.Common.ERROR_GET_DATA;
-//                     res.status(200).send(data);
-//                 } else {
-//                     if (resExecuteQuery.length > 0) {
-//                         const idCurrentUser = req.userToken.idUser;
-//                         const currentDate = helper.formatTimeStamp(
-//                             new Date().getTime()
-//                         );
-//                         let codeOld = resExecuteQuery[0].codeOld;
-//                         // UPDATE DRIVER
-//                         let sql = null;
-//                         let sqlData = "";
-//                         if (idDriverLicense) {
-//                             sqlData += ` idDriverLicense = '${idDriverLicense}',`;
-//                         }
-//                         if (fullName) {
-//                             fullName = helper.removeVietnameseAccents(fullName);
-//                             sqlData += ` fullName = '${fullName}',`;
-//                         }
-//                         if (code) {
-//                             sqlData += ` code = '${code}',`;
-//                         }
-//                         if (email) {
-//                             sqlData += ` email = '${email}',`;
-//                         }
-//                         if (phone) {
-//                             sqlData += ` phone = '${phone}',`;
-//                         }
-//                         if (driverLicenseExpirationDate) {
-//                             driverLicenseExpirationDate =
-//                                 helper.formatTimeStamp(
-//                                     driverLicenseExpirationDate
-//                                 );
-//                             sqlData += ` driverLicenseExpirationDate = '${driverLicenseExpirationDate}',`;
-//                         }
-//                         if (address) {
-//                             sqlData += ` address = '${address}',`;
-//                         }
-//                         if (idWard) {
-//                             sqlData += ` idWard = '${idWard}',`;
-//                         }
-//                         if (idUserStatus) {
-//                             sqlData += ` idUserStatus = ${idUserStatus},`;
-//                         }
+                    if (sqlData) {
+                        sql = `UPDATE user SET ${sqlData} updatedAt = ${currentDate}, idUserUpdate = ${idCurrentUser} WHERE idUser = ${idUser} AND idRole = ${Constants.RoleCode.USER}`;
+                    }
 
-//                         if (sqlData) {
-//                             sql = `UPDATE user SET ${sqlData} updatedAt = ${currentDate}, idUserUpdate = ${idCurrentUser} WHERE idUser = ${idUser} AND idRole = ${Constants.RoleCode.DRIVER}`;
-//                         }
+                    if (sql) {
+                        db.query(sql, async (err, result) => {
+                            if (err) {
+                                data.status =
+                                    Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                                data.message = Strings.Common.ERROR_SERVER;
+                                res.status(200).send(data);
+                            } else {
+                                if (result.changedRows > 0) {
+                                    // UPDATE LDAP
+                                    let errorLdap = false;
+                                    if (code) {
+                                        const resultUpdateCNLdap =
+                                            await updateCNLdap(codeOld, code);
+                                        if (!resultUpdateCNLdap) {
+                                            errorLdap = true;
+                                        }
+                                    }
+                                    if (pass) {
+                                        const resultUpdatePasswordLdap =
+                                            await updatePasswordLdap(
+                                                codeOld,
+                                                pass
+                                            );
+                                        if (!resultUpdatePasswordLdap) {
+                                            errorLdap = true;
+                                        }
+                                    }
+                                    if (fullName) {
+                                        fullName =
+                                            helper.removeVietnameseAccents(
+                                                fullName
+                                            );
+                                        const resultUpdateSNLdap =
+                                            await updateSNLdap(
+                                                codeOld,
+                                                fullName
+                                            );
+                                        if (!resultUpdateSNLdap) {
+                                            errorLdap = true;
+                                        }
+                                    }
 
-//                         if (sql) {
-//                             db.query(sql, async (err, result) => {
-//                                 if (err) {
-//                                     data.status =
-//                                         Constants.ApiCode.INTERNAL_SERVER_ERROR;
-//                                     data.message = Strings.Common.ERROR_SERVER;
-//                                     res.status(200).send(data);
-//                                 } else {
-//                                     if (result.changedRows > 0) {
-//                                         // UPDATE LDAP
-//                                         let errorLdap = false;
-//                                         if (code) {
-//                                             const resultUpdateCNLdap =
-//                                                 await updateCNLdap(
-//                                                     codeOld,
-//                                                     code
-//                                                 );
-//                                             if (!resultUpdateCNLdap) {
-//                                                 errorLdap = true;
-//                                             }
-//                                         }
-//                                         if (pass) {
-//                                             const resultUpdatePasswordLdap =
-//                                                 await updatePasswordLdap(
-//                                                     codeOld,
-//                                                     pass
-//                                                 );
-//                                             if (!resultUpdatePasswordLdap) {
-//                                                 errorLdap = true;
-//                                             }
-//                                         }
-//                                         if (fullName) {
-//                                             fullName =
-//                                                 helper.removeVietnameseAccents(
-//                                                     fullName
-//                                                 );
-//                                             const resultUpdateSNLdap =
-//                                                 await updateSNLdap(
-//                                                     codeOld,
-//                                                     fullName
-//                                                 );
-//                                             if (!resultUpdateSNLdap) {
-//                                                 errorLdap = true;
-//                                             }
-//                                         }
-
-//                                         // CHECK ERROR LDAP
-//                                         if (errorLdap) {
-//                                             data.status =
-//                                                 Constants.ApiCode.INTERNAL_SERVER_ERROR;
-//                                             data.message =
-//                                                 Strings.Common.ERROR_SERVER;
-//                                             res.status(200).send(data);
-//                                         } else {
-//                                             data.status = Constants.ApiCode.OK;
-//                                             data.message =
-//                                                 Strings.Common.SUCCESS;
-//                                             res.status(200).send(data);
-//                                         }
-//                                     } else {
-//                                         data.status =
-//                                             Constants.ApiCode.INTERNAL_SERVER_ERROR;
-//                                         data.message =
-//                                             Strings.Common.ERROR_SERVER;
-//                                         res.status(200).send(data);
-//                                     }
-//                                 }
-//                             });
-//                         } else {
-//                             data.status = Constants.ApiCode.BAD_REQUEST;
-//                             data.message = Strings.Common.DATA_IS_UNCHANGED;
-//                             res.status(200).send(data);
-//                         }
-//                     } else {
-//                         console.log("err else");
-//                         data.status = Constants.ApiCode.BAD_REQUEST;
-//                         data.message = Strings.Common.ERROR_GET_DATA;
-//                         res.status(200).send(data);
-//                     }
-//                 }
-//             }
-//         } else {
-//             data.status = Constants.ApiCode.BAD_REQUEST;
-//             data.message = Strings.Common.NOT_ENOUGH_DATA;
-//             res.status(200).send(data);
-//         }
-//     } else {
-//         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-//         data.message = Strings.Common.USER_NOT_EXIST;
-//         res.status(200).send(data);
-//     }
-// };
+                                    // CHECK ERROR LDAP
+                                    if (errorLdap) {
+                                        data.status =
+                                            Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                                        data.message =
+                                            Strings.Common.ERROR_SERVER;
+                                        res.status(200).send(data);
+                                    } else {
+                                        data.status = Constants.ApiCode.OK;
+                                        data.message = Strings.Common.SUCCESS;
+                                        res.status(200).send(data);
+                                    }
+                                } else {
+                                    data.status =
+                                        Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                                    data.message = Strings.Common.ERROR_SERVER;
+                                    res.status(200).send(data);
+                                }
+                            }
+                        });
+                    } else {
+                        data.status = Constants.ApiCode.BAD_REQUEST;
+                        data.message = Strings.Common.DATA_IS_UNCHANGED;
+                        res.status(200).send(data);
+                    }
+                } else {
+                    console.log("err else");
+                    data.status = Constants.ApiCode.BAD_REQUEST;
+                    data.message = Strings.Common.ERROR_GET_DATA;
+                    res.status(200).send(data);
+                }
+            }
+        } else {
+            data.status = Constants.ApiCode.BAD_REQUEST;
+            data.message = Strings.Common.NOT_ENOUGH_DATA;
+            res.status(200).send(data);
+        }
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
 
 module.exports = {
     getUserList,
-    // getInfoDriver,
-    // getDriverToUpdate,
+    getUserToUpdate,
     createUser,
-    // updateDriver,
-    // createMultipleDriver,
+    updateUser,
+    createMultipleUser,
 };
