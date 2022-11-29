@@ -1,10 +1,14 @@
 const { async } = require("@firebase/util");
-const { executeQuery } = require("../../common/function");
+const {
+    executeQuery,
+    addUserLdap,
+    updateCNLdap,
+    updatePasswordLdap,
+    updateSNLdap,
+} = require("../../common/function");
 const { helper } = require("../../common/helper");
 const { Constants } = require("../../constants/Constants");
 const { Strings } = require("../../constants/Strings");
-const { ldapClient } = require("../../middlewares/ldap/ldapConfig");
-const ldap = require("ldapjs");
 const db = require("../../models/index");
 require("dotenv").config();
 
@@ -28,7 +32,10 @@ const getUserList = async (req, res) => {
     let dataList = { ...Constants.ResultDataList };
 
     if (req.userToken) {
-        if ((userStatus && !helper.isArray(userStatus)) || (faculty && !helper.isArray(faculty))) {
+        if (
+            (userStatus && !helper.isArray(userStatus)) ||
+            (faculty && !helper.isArray(faculty))
+        ) {
             data.status = Constants.ApiCode.BAD_REQUEST;
             data.message = Strings.Common.INVALID_DATA;
             res.status(200).send(data);
@@ -278,156 +285,104 @@ const getUserList = async (req, res) => {
 //     }
 // };
 
-// // CREATE DRIVER
-// const createDriver = async (req, res) => {
-//     let {
-//         idDriverLicense,
-//         fullName,
-//         code,
-//         email,
-//         pass,
-//         phone,
-//         driverLicenseExpirationDate,
-//         address,
-//         idWard,
-//     } = req.body;
-//     let data = { ...Constants.ResultData };
+// CREATE DRIVER
 
-//     if (req.userToken) {
-//         if (!idDriverLicense || !driverLicenseExpirationDate) {
-//             data.status = Constants.ApiCode.BAD_REQUEST;
-//             data.message = Strings.Common.NOT_ENOUGH_DATA;
-//             res.status(200).send(data);
-//         } else if (!helper.isTimeStamp(driverLicenseExpirationDate)) {
-//             data.status = Constants.ApiCode.BAD_REQUEST;
-//             data.message = Strings.Common.INVALID_DATA;
-//             res.status(200).send(data);
-//         } else {
-//             const idUser = req.userToken.idUser;
-//             let currentDate = helper.formatTimeStamp(new Date().getTime());
-//             const sql = `INSERT INTO user(fullName, code, email, phone, address, driverLicenseExpirationDate,
-//                     createdAt,  idDriverLicense, idRole, idWard, idUserStatus, idUserUpdate) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`;
+const createUser = async (req, res) => {
+    let { idFaculty, fullName, code, email, pass, phone, address, idWard } =
+        req.body;
+    let data = { ...Constants.ResultData };
 
-//             driverLicenseExpirationDate = helper.formatTimeStamp(
-//                 driverLicenseExpirationDate
-//             );
-//             fullName = helper.removeVietnameseAccents(fullName);
-//             db.beginTransaction(function (err) {
-//                 if (err) {
-//                     data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-//                     data.message = Strings.Common.ERROR;
-//                     res.status(200).send(data);
-//                 }
-//                 db.query(
-//                     sql,
-//                     [
-//                         fullName,
-//                         code,
-//                         email,
-//                         phone,
-//                         address,
-//                         driverLicenseExpirationDate,
-//                         currentDate,
-//                         idDriverLicense,
-//                         Constants.RoleCode.DRIVER,
-//                         idWard,
-//                         Constants.UserStatusCode.WORKING,
-//                         idUser,
-//                     ],
-//                     function (error, results, fields) {
-//                         if (error) {
-//                             return db.rollback(function () {
-//                                 data.status =
-//                                     Constants.ApiCode.INTERNAL_SERVER_ERROR;
-//                                 data.message = Strings.Common.ERROR;
-//                                 res.status(200).send(data);
-//                             });
-//                         } else {
-//                             if (results.affectedRows > 0) {
-//                                 db.commit(async function (err) {
-//                                     if (err) {
-//                                         return db.rollback(function () {
-//                                             data.status =
-//                                                 Constants.ApiCode.INTERNAL_SERVER_ERROR;
-//                                             data.message = Strings.Common.ERROR;
-//                                             res.status(200).send(data);
-//                                         });
-//                                     } else {
-//                                         const resultAddUserLdap =
-//                                             await addDriverLdap(
-//                                                 fullName,
-//                                                 code,
-//                                                 pass
-//                                             );
-//                                         if (resultAddUserLdap) {
-//                                             data.status = Constants.ApiCode.OK;
-//                                             data.message =
-//                                                 Strings.Common.SUCCESS;
-//                                             res.status(200).send(data);
-//                                         } else {
-//                                             return db.rollback(function () {
-//                                                 data.status =
-//                                                     Constants.ApiCode.INTERNAL_SERVER_ERROR;
-//                                                 data.message =
-//                                                     Strings.Common.ERROR;
-//                                                 res.status(200).send(data);
-//                                             });
-//                                         }
-//                                     }
-//                                 });
-//                             } else {
-//                                 data.status =
-//                                     Constants.ApiCode.INTERNAL_SERVER_ERROR;
-//                                 data.message = Strings.Common.ERROR;
-//                                 res.status(200).send(data);
-//                             }
-//                         }
-//                     }
-//                 );
-//             });
-//         }
-//     } else {
-//         data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
-//         data.message = Strings.Common.USER_NOT_EXIST;
-//         res.status(200).send(data);
-//     }
-// };
+    if (req.userToken) {
+        if (!idFaculty) {
+            data.status = Constants.ApiCode.BAD_REQUEST;
+            data.message = Strings.Common.NOT_ENOUGH_DATA;
+            res.status(200).send(data);
+        } else {
+            const idUser = req.userToken.idUser;
+            let currentDate = helper.formatTimeStamp(new Date().getTime());
+            const sql = `INSERT INTO user(fullName, code, email, phone, address, createdAt, idFaculty, idRole, idWard, idUserStatus, idUserUpdate) 
+                VALUES (?,?,?,?,?,?,?,?,?,?,?)`;
 
-// const addDriverLdap = async (fullName, code, password) => {
-//     const DN_LDAP_ADMIN = await process.env.DN_LDAP_ADMIN;
-//     const SECRET_LDAP_ADMIN = await process.env.SECRET_LDAP_ADMIN;
-
-//     return new Promise((resolve, reject) => {
-//         ldapClient.bind(DN_LDAP_ADMIN, SECRET_LDAP_ADMIN, function (err) {
-//             // error authentication ldap server
-//             if (err) {
-//                 console.log("err addDriverLdap 1", err);
-//                 return resolve(false);
-//             }
-//             // get data user => token
-//             else {
-//                 var entry = {
-//                     sn: `${fullName}`,
-//                     objectclass: `${process.env.OBJECT_CLASS_LDAP}`,
-//                     userPassword: `${password}`,
-//                 };
-//                 ldapClient.add(
-//                     `cn=${code},ou=users,ou=system`,
-//                     entry,
-//                     function (err) {
-//                         if (err) {
-//                             console.log("err addDriverLdap 2" + err);
-//                             return resolve(false);
-//                         } else {
-//                             console.log("added user");
-//                             return resolve(true);
-//                         }
-//                     }
-//                 );
-//             }
-//         });
-//     });
-// };
+            fullName = helper.removeVietnameseAccents(fullName);
+            db.beginTransaction(function (err) {
+                if (err) {
+                    data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                    data.message = Strings.Common.ERROR;
+                    res.status(200).send(data);
+                }
+                db.query(
+                    sql,
+                    [
+                        fullName,
+                        code,
+                        email,
+                        phone,
+                        address,
+                        currentDate,
+                        idFaculty,
+                        Constants.RoleCode.USER,
+                        idWard,
+                        Constants.UserStatusCode.WORKING,
+                        idUser,
+                    ],
+                    function (error, results, fields) {
+                        if (error) {
+                            return db.rollback(function () {
+                                data.status =
+                                    Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                                data.message = Strings.Common.ERROR;
+                                res.status(200).send(data);
+                            });
+                        } else {
+                            if (results.affectedRows > 0) {
+                                db.commit(async function (err) {
+                                    if (err) {
+                                        return db.rollback(function () {
+                                            data.status =
+                                                Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                                            data.message = Strings.Common.ERROR;
+                                            res.status(200).send(data);
+                                        });
+                                    } else {
+                                        const resultAddUserLdap =
+                                            await addUserLdap(
+                                                fullName,
+                                                code,
+                                                pass
+                                            );
+                                        if (resultAddUserLdap) {
+                                            data.status = Constants.ApiCode.OK;
+                                            data.message =
+                                                Strings.Common.SUCCESS;
+                                            res.status(200).send(data);
+                                        } else {
+                                            return db.rollback(function () {
+                                                data.status =
+                                                    Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                                                data.message =
+                                                    Strings.Common.ERROR;
+                                                res.status(200).send(data);
+                                            });
+                                        }
+                                    }
+                                });
+                            } else {
+                                data.status =
+                                    Constants.ApiCode.INTERNAL_SERVER_ERROR;
+                                data.message = Strings.Common.ERROR;
+                                res.status(200).send(data);
+                            }
+                        }
+                    }
+                );
+            });
+        }
+    } else {
+        data.status = Constants.ApiCode.INTERNAL_SERVER_ERROR;
+        data.message = Strings.Common.USER_NOT_EXIST;
+        res.status(200).send(data);
+    }
+};
 
 // //CREATE MULTIPLE DRIVER FROM FILE EXCEL
 // const validateDataCreateDriverFunction = async (
@@ -830,121 +785,11 @@ const getUserList = async (req, res) => {
 //     }
 // };
 
-// const updateCNLdap = async (codeOld, codeNew) => {
-//     const result = await ldapClient.bind(
-//         process.env.DN_LDAP_ADMIN,
-//         process.env.SECRET_LDAP_ADMIN,
-//         function (err) {
-//             // error authentication ldap server
-//             if (err) {
-//                 console.log("err addDriverLdap 1", err);
-//                 return false;
-//             }
-//             // get data user => token
-//             else {
-//                 ldapClient.modifyDN(
-//                     `cn=${codeOld},${process.env.DN_LDAP_COMMON}`,
-//                     `cn=${codeNew}`,
-//                     function (err) {
-//                         if (err) {
-//                             console.log("err in update user " + err);
-//                             return false;
-//                         } else {
-//                             console.log("result :");
-//                             return true;
-//                         }
-//                     }
-//                 );
-//             }
-//         }
-//     );
-
-//     return result;
-// };
-
-// const updatePasswordLdap = async (code, password) => {
-//     const result = await ldapClient.bind(
-//         process.env.DN_LDAP_ADMIN,
-//         process.env.SECRET_LDAP_ADMIN,
-//         function (err) {
-//             // error authentication ldap server
-//             if (err) {
-//                 console.log("err addDriverLdap 1", err);
-//                 return false;
-//             }
-//             // get data user => token
-//             else {
-//                 var change = new ldap.Change({
-//                     operation: "replace", // use replace to update the existing attribute
-//                     modification: {
-//                         userPassword: password,
-//                     },
-//                 });
-
-//                 ldapClient.modify(
-//                     `cn=${code},${process.env.DN_LDAP_COMMON}`,
-//                     change,
-//                     function (err) {
-//                         if (err) {
-//                             console.log("err in update user " + err);
-//                             return false;
-//                         } else {
-//                             console.log("add update user");
-//                             return true;
-//                         }
-//                     }
-//                 );
-//             }
-//         }
-//     );
-
-//     return result;
-// };
-
-// const updateSNLdap = async (code, fullName) => {
-//     const result = await ldapClient.bind(
-//         process.env.DN_LDAP_ADMIN,
-//         process.env.SECRET_LDAP_ADMIN,
-//         function (err) {
-//             // error authentication ldap server
-//             if (err) {
-//                 console.log("err addDriverLdap 1", err);
-//                 return false;
-//             }
-//             // get data user => token
-//             else {
-//                 var change = new ldap.Change({
-//                     operation: "replace", // use replace to update the existing attribute
-//                     modification: {
-//                         sn: fullName,
-//                     },
-//                 });
-
-//                 ldapClient.modify(
-//                     `cn=${code},${process.env.DN_LDAP_COMMON}`,
-//                     change,
-//                     function (err) {
-//                         if (err) {
-//                             console.log("err in update user " + err);
-//                             return false;
-//                         } else {
-//                             console.log("add update user");
-//                             return true;
-//                         }
-//                     }
-//                 );
-//             }
-//         }
-//     );
-
-//     return result;
-// };
-
 module.exports = {
     getUserList,
     // getInfoDriver,
     // getDriverToUpdate,
-    // createDriver,
+    createUser,
     // updateDriver,
     // createMultipleDriver,
 };

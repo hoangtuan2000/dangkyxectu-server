@@ -1,5 +1,8 @@
 const { Constants } = require("../constants/Constants");
+const ldap = require("ldapjs");
+const { ldapClient } = require("../middlewares/ldap/ldapConfig");
 const { sendMail } = require("../middlewares/nodeMailer/nodeMailer");
+require("dotenv").config();
 
 const executeQuery = async (connect, query, params) => {
     return new Promise((resolve, reject) => {
@@ -10,6 +13,148 @@ const executeQuery = async (connect, query, params) => {
 
             return resolve(result);
         });
+    });
+};
+
+const addUserLdap = async (fullName, code, password) => {
+    const DN_LDAP_ADMIN = await process.env.DN_LDAP_ADMIN;
+    const SECRET_LDAP_ADMIN = await process.env.SECRET_LDAP_ADMIN;
+
+    return new Promise((resolve, reject) => {
+        ldapClient.bind(DN_LDAP_ADMIN, SECRET_LDAP_ADMIN, function (err) {
+            // error authentication ldap server
+            if (err) {
+                console.log("err addDriverLdap 1", err);
+                return resolve(false);
+            }
+            // get data user => token
+            else {
+                var entry = {
+                    sn: `${fullName}`,
+                    objectclass: `${process.env.OBJECT_CLASS_LDAP}`,
+                    userPassword: `${password}`,
+                };
+                ldapClient.add(
+                    `cn=${code},ou=users,ou=system`,
+                    entry,
+                    function (err) {
+                        if (err) {
+                            console.log("err addDriverLdap 2" + err);
+                            return resolve(false);
+                        } else {
+                            console.log("added user");
+                            return resolve(true);
+                        }
+                    }
+                );
+            }
+        });
+    });
+};
+
+const updateCNLdap = async (codeOld, codeNew) => {
+    return new Promise((resolve, reject) => {
+        ldapClient.bind(
+            process.env.DN_LDAP_ADMIN,
+            process.env.SECRET_LDAP_ADMIN,
+            function (err) {
+                // error authentication ldap server
+                if (err) {
+                    console.log("err updateCNLdap", err);
+                    return resolve(false);
+                } else {
+                    ldapClient.modifyDN(
+                        `cn=${codeOld},${process.env.DN_LDAP_COMMON}`,
+                        `cn=${codeNew}`,
+                        function (err) {
+                            if (err) {
+                                console.log("err in updateCNLdap " + err);
+                                return resolve(false);
+                            } else {
+                                console.log("updateCNLdap success");
+                                return resolve(true);
+                            }
+                        }
+                    );
+                }
+            }
+        );
+    });
+};
+
+const updatePasswordLdap = async (code, password) => {
+    return new Promise((resolve, reject) => {
+        ldapClient.bind(
+            process.env.DN_LDAP_ADMIN,
+            process.env.SECRET_LDAP_ADMIN,
+            function (err) {
+                // error authentication ldap server
+                if (err) {
+                    console.log("err updatePasswordLdap", err);
+                    return resolve(false);
+                } else {
+                    var change = new ldap.Change({
+                        operation: "replace", // use replace to update the existing attribute
+                        modification: {
+                            userPassword: password,
+                        },
+                    });
+
+                    ldapClient.modify(
+                        `cn=${code},${process.env.DN_LDAP_COMMON}`,
+                        change,
+                        function (err) {
+                            if (err) {
+                                console.log("err in updatePasswordLdap " + err);
+                                return resolve(false);
+                            } else {
+                                console.log("updatePasswordLdap success");
+                                return resolve(true);
+                            }
+                        }
+                    );
+                }
+            }
+        );
+    });
+};
+
+const updateSNLdap = async (code, fullName) => {
+    return new Promise((resolve, reject) => {
+        ldapClient.bind(
+            process.env.DN_LDAP_ADMIN,
+            process.env.SECRET_LDAP_ADMIN,
+            function (err) {
+                // error authentication ldap server
+                if (err) {
+                    console.log("err updateSNLdap", err);
+                    return resolve(false);
+                }
+                // get data user => token
+                else {
+                    var change = new ldap.Change({
+                        operation: "replace", // use replace to update the existing attribute
+                        modification: {
+                            sn: fullName,
+                        },
+                    });
+
+                    ldapClient.modify(
+                        `cn=${code},${process.env.DN_LDAP_COMMON}`,
+                        change,
+                        function (err) {
+                            if (err) {
+                                console.log("err in updateSNLdap " + err);
+                                return resolve(false);
+                            } else {
+                                console.log("updateSNLdap success");
+                                return resolve(true);
+                            }
+                        }
+                    );
+                }
+            }
+        );
     });
 };
 
@@ -221,4 +366,11 @@ const sendEmailCreateOrUpdateSchedule = (
     sendMail(email, subject, text, html);
 };
 
-module.exports = { executeQuery, sendEmailCreateOrUpdateSchedule };
+module.exports = {
+    executeQuery,
+    sendEmailCreateOrUpdateSchedule,
+    addUserLdap,
+    updateCNLdap,
+    updatePasswordLdap,
+    updateSNLdap,
+};

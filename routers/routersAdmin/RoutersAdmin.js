@@ -205,6 +205,15 @@ router.post(
     userAdminControllers.getUserList
 );
 
+router.post(
+    "/createUser",
+    authenticationControllers.authenticationAdminSystem,
+    userControllers.validateDataCreateUser,
+    userControllers.checkCodeUserExist,
+    userControllers.checkEmailUserExist,
+    userAdminControllers.createUser
+);
+
 // ANALYSIS
 router.post(
     "/getAnalysisTotalCommon",

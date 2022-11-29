@@ -1,10 +1,13 @@
-const { async } = require("@firebase/util");
-const { executeQuery } = require("../../common/function");
+const {
+    executeQuery,
+    updateCNLdap,
+    addUserLdap,
+    updatePasswordLdap,
+    updateSNLdap,
+} = require("../../common/function");
 const { helper } = require("../../common/helper");
 const { Constants } = require("../../constants/Constants");
 const { Strings } = require("../../constants/Strings");
-const { ldapClient } = require("../../middlewares/ldap/ldapConfig");
-const ldap = require("ldapjs");
 const db = require("../../models/index");
 require("dotenv").config();
 
@@ -416,7 +419,7 @@ const createDriver = async (req, res) => {
                                         });
                                     } else {
                                         const resultAddUserLdap =
-                                            await addDriverLdap(
+                                            await addUserLdap(
                                                 fullName,
                                                 code,
                                                 pass
@@ -453,42 +456,6 @@ const createDriver = async (req, res) => {
         data.message = Strings.Common.USER_NOT_EXIST;
         res.status(200).send(data);
     }
-};
-
-const addDriverLdap = async (fullName, code, password) => {
-    const DN_LDAP_ADMIN = await process.env.DN_LDAP_ADMIN;
-    const SECRET_LDAP_ADMIN = await process.env.SECRET_LDAP_ADMIN;
-
-    return new Promise((resolve, reject) => {
-        ldapClient.bind(DN_LDAP_ADMIN, SECRET_LDAP_ADMIN, function (err) {
-            // error authentication ldap server
-            if (err) {
-                console.log("err addDriverLdap 1", err);
-                return resolve(false);
-            }
-            // get data user => token
-            else {
-                var entry = {
-                    sn: `${fullName}`,
-                    objectclass: `${process.env.OBJECT_CLASS_LDAP}`,
-                    userPassword: `${password}`,
-                };
-                ldapClient.add(
-                    `cn=${code},ou=users,ou=system`,
-                    entry,
-                    function (err) {
-                        if (err) {
-                            console.log("err addDriverLdap 2" + err);
-                            return resolve(false);
-                        } else {
-                            console.log("added user");
-                            return resolve(true);
-                        }
-                    }
-                );
-            }
-        });
-    });
 };
 
 //CREATE MULTIPLE DRIVER FROM FILE EXCEL
@@ -643,7 +610,7 @@ const createMultipleDriver = async (req, res) => {
                                                         return resolve(false);
                                                     } else {
                                                         const resultAddUserLdap =
-                                                            await addDriverLdap(
+                                                            await addUserLdap(
                                                                 helper.removeVietnameseAccents(
                                                                     fileData[i]
                                                                         .fullName
@@ -890,116 +857,6 @@ const updateDriver = async (req, res) => {
         data.message = Strings.Common.USER_NOT_EXIST;
         res.status(200).send(data);
     }
-};
-
-const updateCNLdap = async (codeOld, codeNew) => {
-    const result = await ldapClient.bind(
-        process.env.DN_LDAP_ADMIN,
-        process.env.SECRET_LDAP_ADMIN,
-        function (err) {
-            // error authentication ldap server
-            if (err) {
-                console.log("err addDriverLdap 1", err);
-                return false;
-            }
-            // get data user => token
-            else {
-                ldapClient.modifyDN(
-                    `cn=${codeOld},${process.env.DN_LDAP_COMMON}`,
-                    `cn=${codeNew}`,
-                    function (err) {
-                        if (err) {
-                            console.log("err in update user " + err);
-                            return false;
-                        } else {
-                            console.log("result :");
-                            return true;
-                        }
-                    }
-                );
-            }
-        }
-    );
-
-    return result;
-};
-
-const updatePasswordLdap = async (code, password) => {
-    const result = await ldapClient.bind(
-        process.env.DN_LDAP_ADMIN,
-        process.env.SECRET_LDAP_ADMIN,
-        function (err) {
-            // error authentication ldap server
-            if (err) {
-                console.log("err addDriverLdap 1", err);
-                return false;
-            }
-            // get data user => token
-            else {
-                var change = new ldap.Change({
-                    operation: "replace", // use replace to update the existing attribute
-                    modification: {
-                        userPassword: password,
-                    },
-                });
-
-                ldapClient.modify(
-                    `cn=${code},${process.env.DN_LDAP_COMMON}`,
-                    change,
-                    function (err) {
-                        if (err) {
-                            console.log("err in update user " + err);
-                            return false;
-                        } else {
-                            console.log("add update user");
-                            return true;
-                        }
-                    }
-                );
-            }
-        }
-    );
-
-    return result;
-};
-
-const updateSNLdap = async (code, fullName) => {
-    const result = await ldapClient.bind(
-        process.env.DN_LDAP_ADMIN,
-        process.env.SECRET_LDAP_ADMIN,
-        function (err) {
-            // error authentication ldap server
-            if (err) {
-                console.log("err addDriverLdap 1", err);
-                return false;
-            }
-            // get data user => token
-            else {
-                var change = new ldap.Change({
-                    operation: "replace", // use replace to update the existing attribute
-                    modification: {
-                        sn: fullName,
-                    },
-                });
-
-                ldapClient.modify(
-                    `cn=${code},${process.env.DN_LDAP_COMMON}`,
-                    change,
-                    function (err) {
-                        if (err) {
-                            console.log("err in update user " + err);
-                            return false;
-                        } else {
-                            console.log("add update user");
-                            return true;
-                        }
-                    }
-                );
-            }
-        }
-    );
-
-    return result;
 };
 
 module.exports = {
