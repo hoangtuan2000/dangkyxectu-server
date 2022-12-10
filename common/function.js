@@ -353,12 +353,7 @@ const sendEmailCreateOrUpdateSchedule = (
                                         </p>
                                         ${existUpdatedAt}
                                     </div>
-                                    <button class="buttonShowDetail">
-                                        <a href="${linkScheduleWeb}" class="textLink"> Xem Thông Tin Chi Tiết </a>
-                                    </button>
-                                    <button class="buttonOpenApp">
-                                    <a href="${linkScheduleApp}" class="textLink"> Mở Ứng Dụng </a>
-                                    </button>
+                                    
                                 </div>
                             </div>
                         </body>
